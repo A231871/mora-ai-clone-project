@@ -1,0 +1,54 @@
+# ========================
+# OS Generated Files
+# ========================
+.DS_Store
+Thumbs.db
+
+# ========================
+# Backend (Node.js)
+# ========================
+backend/node_modules/
+backend/npm-debug.log
+backend/.env
+backend/.env.*
+backend/coverage/
+
+# ========================
+# Frontend (Flutter/Dart)
+# ========================
+# Flutter/Dart/Pub related
+**/doc/api/
+**/.dart_tool/
+**/.packages
+**/.pub/
+**/.pub-cache/
+**/build/
+**/coverage/
+
+# Android related
+**/android/app/src/main/gen/
+**/android/app/src/main/assets/
+**/android/.gradle
+**/android/local.properties
+**/android/**/*.apk
+**/android/**/*.aab
+**/android/**/*.key
+**/android/**/*.jks
+
+# iOS/XCode related
+**/ios/**/*.mode1v3
+**/ios/**/*.pbxuser
+**/ios/**/*.cppwrap
+**/ios/**/*.xccheckout
+**/ios/**/*.profile
+**/ios/Flutter/App.framework
+**/ios/Flutter/Flutter.framework
+**/ios/Flutter/Flutter.podspec
+**/ios/Flutter/Generated.xcconfig
+**/ios/Flutter/app.flx
+**/ios/Flutter/app.zip
+**/ios/Flutter/flutter_assets/
+**/ios/Flutter/flutter_export_environment.sh
+**/ios/ServiceDefinitions.json
+**/ios/Pods/
+**/ios/.symlinks/
