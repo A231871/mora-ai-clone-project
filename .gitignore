@@ -63,6 +63,3 @@ MoraUI/[Ll]ogs/
 MoraUI/UserSettings/
 MoraUI/*.csproj
 MoraUI/*.sln
-MoraUI/.vs/
-MoraUI/.idea/
-MoraUI/.vscode/
