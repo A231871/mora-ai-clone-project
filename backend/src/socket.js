@@ -1,13 +1,14 @@
 const { Server } = require("socket.io");
 const jwt = require("jsonwebtoken");
-const { generateResponse } = require("./services/ai.service");
+const { generateResponseWithHistory } = require("./services/ai.service");
+const ChatMessage = require("./models/ChatMessage");
 
 let io;
 
 const initSocket = (server) => {
   io = new Server(server, {
     cors: {
-      origin: "*", // Adjust this in production
+      origin: "*", 
       methods: ["GET", "POST"]
     }
   });
@@ -24,37 +25,79 @@ const initSocket = (server) => {
         return next(new Error("Authentication error: Invalid token"));
       }
       socket.user = decoded; // Attach user info
-      console.log("Decoded Token Data:", socket.user); // <--- ADD THIS LINE
+      console.log("Decoded Token Data:", socket.user); 
       next();
     });
   });
 
   // Event Listeners
   io.on("connection", (socket) => {
-    console.log(`[Socket] User connected: ${socket.user.username}`); // Adjusted because username may not be in token depending on how auth was handled in Phase 2
+    const currentUserId = socket.user._id || socket.user.id || socket.user.userId;
+        if (!currentUserId) {
+      console.error("[Socket Error] JWT Token does not contain a valid user ID! Token contents:", socket.user);
+      return; 
+    }
+    console.log(`[Socket] User connected: ${socket.user.username}`); 
 
-    // Listen for incoming chat messages from Flutter
+    // Fetch History using _id
+    socket.on("chat:fetch_history", async () => {
+      try {
+        const history = await ChatMessage.find({ userId: currentUserId }) // Fixed _id
+            .sort({ timestamp: 1 }) 
+            .limit(50); 
+        socket.emit("chat:history_loaded", history);
+      } catch (err) {
+        console.error("Error fetching history:", err);
+      }
+    });
+
+    // Real-time contextual chat
     socket.on("chat:send", async (data) => {
-      console.log(`[Chat] Received from user: ${data.message}`);
-      
-      // Emit acknowledging we are "typing/thinking"
-      socket.emit("chat:typing", { status: true });
+      try {
+        console.log(`[Chat] Received from user: ${data.message}`);
+        socket.emit("chat:typing", { status: true });
 
-      // Call Gemini AI Service
-      const aiReply = await generateResponse(data.message);
+        // 1. Fetch recent history
+        let recentHistory = await ChatMessage.find({ userId: currentUserId }) // Fixed _id
+            .sort({ timestamp: -1 })
+            .limit(10)
+            .lean(); 
+            
+        recentHistory = recentHistory.reverse(); 
 
-      // Emit response back to the specific user
-      socket.emit("chat:receive", {
-        sender: "Mora",
-        message: aiReply,
-        timestamp: new Date().toISOString()
-      });
-      
-      socket.emit("chat:typing", { status: false });
+        // 2. Request Gemini Contextual Reply FIRST
+        const aiReply = await generateResponseWithHistory(data.message, recentHistory);
+
+        // 3. Save BOTH messages to DB only if Gemini succeeds (prevents role-alternating crashes)
+        const savedUserMessage = await ChatMessage.create({
+          userId: currentUserId, // Fixed _id
+          role: 'user',
+          content: data.message
+        });
+
+        const savedAiMessage = await ChatMessage.create({
+          userId: currentUserId, // Fixed _id
+          role: 'model',
+          content: aiReply
+        });
+
+        // 4. Emit processed message to UI
+        socket.emit("chat:receive", {
+          sender: "Mora",
+          message: aiReply,
+          timestamp: savedAiMessage.timestamp
+        });
+        
+        socket.emit("chat:typing", { status: false });
+      } catch (err) {
+        console.error("Error processing message:", err);
+        socket.emit("chat:typing", { status: false });
+        // Optional: Emit an error message back to the user's UI here
+      }
     });
 
     socket.on("disconnect", () => {
-      console.log(`[Socket] User disconnected: ${socket.user.id}`);
+      console.log(`[Socket] User disconnected: ${socket.user.username}`);
     });
   });
 

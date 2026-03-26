@@ -1,22 +1,30 @@
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
-// Initialize the SDK. We use the recommended gemini-2.5-flash for fast chat responses
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 const model = genAI.getGenerativeModel({
-  model: "gemini-2.5-flash",
+  model: "gemini-2.5-flash", 
   systemInstruction: "You are Mora, a cute AI assistant with a mecha anime style (một trợ lý AI dễ thương, phong cách mecha anime). You are helpful, proactive, and occasionally use mecha anime terminology. Keep responses concise and engaging for a mobile UI."
 });
 
-const generateResponse = async (userMessage) => {
+const generateResponseWithHistory = async (userMessage, dbHistory) => {
   try {
-    const result = await model.generateContent(userMessage);
+    const structuredHistory = dbHistory.map(msg => ({
+      role: msg.role, 
+      parts: [{ text: msg.content }]
+    }));
+
+    const chat = model.startChat({
+      history: structuredHistory,
+    });
+
+    const result = await chat.sendMessage(userMessage);
     const response = await result.response;
     return response.text();
   } catch (error) {
     console.error("Gemini API Error:", error);
-    return "Lỗi hệ thống! Core functions offline. (Xin lỗi, em đang gặp sự cố kết nối, hãy thử lại sau nhé!)";
+    return "Lỗi hệ thống! Memory core offline. (Xin lỗi, module trí nhớ đang gặp sự cố, hãy thử lại sau nhé!)";
   }
 };
 
-module.exports = { generateResponse };
+module.exports = { generateResponseWithHistory };
