@@ -40,7 +40,7 @@ class StartScreen extends StatelessWidget {
                     style: AppTextStyles.displayLarge.copyWith(
                       shadows: [
                         Shadow(
-                          color: AppColors.primary.withValues(alpha: 0.8),
+                          color: AppColors.primary.withOpacity(0.8),
                           blurRadius: 20,
                         ),
                       ],
@@ -64,7 +64,7 @@ class StartScreen extends StatelessWidget {
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: AppColors.primary.withValues(alpha: 0.35),
+                            color: AppColors.primary.withOpacity(0.35),
                             blurRadius: 60,
                             spreadRadius: 10,
                           ),

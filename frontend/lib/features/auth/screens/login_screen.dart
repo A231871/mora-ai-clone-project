@@ -133,9 +133,9 @@ class _AuthTabs extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.bgCard,
-        borderRadius: BorderRadius.circular(AppSpacing.pill),
+        borderRadius: BorderRadius.circular(AppRadius.pill),
         border: Border.all(
-          color: AppColors.primary.withValues(alpha: 0.3),
+          color: AppColors.primary.withOpacity(0.3),
           width: 1,
         ),
       ),
@@ -160,7 +160,7 @@ class _AuthTabs extends StatelessWidget {
                     colors: [AppColors.primary, AppColors.accent],
                   )
                 : null,
-            borderRadius: BorderRadius.circular(AppSpacing.pill),
+            borderRadius: BorderRadius.circular(AppRadius.pill),
           ),
           alignment: Alignment.center,
           child: Text(

@@ -13,7 +13,7 @@ class GridBackground extends StatelessWidget {
         child: Image.asset(
           'assets/bg_grid.png',
           repeat: ImageRepeat.repeat,
-          color: AppColors.primary.withValues(alpha: 0.07),
+          color: AppColors.primary.withOpacity(0.07),
           colorBlendMode: BlendMode.screen,
           // Fallback: if PNG not present, show plain bgDeep
           errorBuilder: (_, __, ___) =>

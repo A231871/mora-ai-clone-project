@@ -86,7 +86,7 @@ class _ConfigScreenState extends State<ConfigScreen> {
                     color: AppColors.bgCard,
                     borderRadius: BorderRadius.circular(AppSpacing.md),
                     border: Border.all(
-                      color: AppColors.primary.withValues(alpha: 0.3),
+                      color: AppColors.primary.withOpacity(0.3),
                     ),
                   ),
                   child: Row(
@@ -190,7 +190,7 @@ class _SliderCard extends StatelessWidget {
         color: AppColors.bgCard,
         borderRadius: BorderRadius.circular(AppSpacing.md),
         border: Border.all(
-          color: AppColors.primary.withValues(alpha: 0.2),
+          color: AppColors.primary.withOpacity(0.2),
         ),
       ),
       child: Row(
@@ -201,7 +201,7 @@ class _SliderCard extends StatelessWidget {
               value: value,
               onChanged: onChanged,
               activeColor: AppColors.primary,
-              inactiveColor: AppColors.primary.withValues(alpha: 0.2),
+              inactiveColor: AppColors.primary.withOpacity(0.2),
             ),
           ),
         ],
@@ -239,7 +239,7 @@ class _ToggleCard extends StatelessWidget {
         color: AppColors.bgCard,
         borderRadius: BorderRadius.circular(AppSpacing.md),
         border: Border.all(
-          color: AppColors.primary.withValues(alpha: 0.2),
+          color: AppColors.primary.withOpacity(0.2),
         ),
       ),
       child: Row(

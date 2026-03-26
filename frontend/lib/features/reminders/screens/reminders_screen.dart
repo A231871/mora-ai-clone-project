@@ -93,7 +93,7 @@ class _RemindersScreenState extends State<RemindersScreen> {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(AppSpacing.pill),
+                  borderRadius: BorderRadius.circular(AppRadius.pill),
                   child: LinearProgressIndicator(
                     value: _tasks.isEmpty ? 0 : _doneCount / _tasks.length,
                     minHeight: 4,
@@ -158,7 +158,7 @@ class _TaskCard extends StatelessWidget {
         color: AppColors.bgCard,
         borderRadius: BorderRadius.circular(AppSpacing.md),
         border: Border.all(
-          color: AppColors.primary.withValues(alpha: 0.25),
+          color: AppColors.primary.withOpacity(0.25),
           width: 1,
         ),
       ),
@@ -183,7 +183,7 @@ class _TaskCard extends StatelessWidget {
                 boxShadow: task.isDone
                     ? [
                         BoxShadow(
-                          color: AppColors.primary.withValues(alpha: 0.4),
+                          color: AppColors.primary.withOpacity(0.4),
                           blurRadius: 8,
                         )
                       ]

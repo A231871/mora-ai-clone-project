@@ -156,7 +156,7 @@ class _MessageBubble extends StatelessWidget {
               height: 32,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppColors.primary.withValues(alpha: 0.2),
+                color: AppColors.primary.withOpacity(0.2),
                 border: Border.all(color: AppColors.primary, width: 1),
               ),
               child: const Icon(Icons.local_florist,
@@ -174,7 +174,7 @@ class _MessageBubble extends StatelessWidget {
                   padding: const EdgeInsets.all(AppSpacing.md),
                   decoration: BoxDecoration(
                     color: isUser
-                        ? Colors.white.withValues(alpha: 0.1)
+                        ? Colors.white.withOpacity(0.1)
                         : AppColors.bgCard,
                     borderRadius: BorderRadius.only(
                       topLeft: const Radius.circular(AppSpacing.lg),
@@ -187,14 +187,14 @@ class _MessageBubble extends StatelessWidget {
                     border: isUser
                         ? null
                         : Border.all(
-                            color: AppColors.primary.withValues(alpha: 0.35),
+                            color: AppColors.primary.withOpacity(0.35),
                             width: 1,
                           ),
                     boxShadow: isUser
                         ? null
                         : [
                             BoxShadow(
-                              color: AppColors.primary.withValues(alpha: 0.1),
+                              color: AppColors.primary.withOpacity(0.1),
                               blurRadius: 8,
                             ),
                           ],
@@ -218,9 +218,9 @@ class _MessageBubble extends StatelessWidget {
               height: 32,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.white.withValues(alpha: 0.1),
+                color: Colors.white.withOpacity(0.1),
                 border: Border.all(
-                    color: AppColors.textSecondary.withValues(alpha: 0.4)),
+                    color: AppColors.textSecondary.withOpacity(0.4)),
               ),
               child: const Icon(Icons.wb_sunny_outlined,
                   size: 16, color: AppColors.textSecondary),
@@ -246,7 +246,7 @@ class _InputBar extends StatelessWidget {
         color: AppColors.bgDeep,
         border: Border(
           top: BorderSide(
-            color: AppColors.primary.withValues(alpha: 0.2),
+            color: AppColors.primary.withOpacity(0.2),
             width: 1,
           ),
         ),
@@ -267,15 +267,15 @@ class _InputBar extends StatelessWidget {
                   vertical: AppSpacing.sm,
                 ),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(AppSpacing.pill),
+                  borderRadius: BorderRadius.circular(AppRadius.pill),
                   borderSide: BorderSide.none,
                 ),
                 enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(AppSpacing.pill),
+                  borderRadius: BorderRadius.circular(AppRadius.pill),
                   borderSide: BorderSide.none,
                 ),
                 focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(AppSpacing.pill),
+                  borderRadius: BorderRadius.circular(AppRadius.pill),
                   borderSide: const BorderSide(
                       color: AppColors.primary, width: 1.5),
                 ),
@@ -296,7 +296,7 @@ class _InputBar extends StatelessWidget {
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.primary.withValues(alpha: 0.5),
+                    color: AppColors.primary.withOpacity(0.5),
                     blurRadius: 12,
                     spreadRadius: 1,
                   ),

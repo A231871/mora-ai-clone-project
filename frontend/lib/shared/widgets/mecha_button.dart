@@ -51,7 +51,7 @@ class MechaButton extends StatelessWidget {
               : Border.all(color: AppColors.primary, width: 1.5),
           boxShadow: [
             BoxShadow(
-              color: AppColors.primary.withValues(alpha: isPrimary ? 0.55 : 0.3),
+              color: AppColors.primary.withOpacity(isPrimary ? 0.55 : 0.3),
               blurRadius: 15,
               spreadRadius: 2,
             ),
