@@ -8,8 +8,8 @@ import '../../../shared/widgets/grid_background.dart';
 import '../../../shared/widgets/mecha_button.dart';
 import '../../../shared/widgets/mecha_text_field.dart';
 
-class LoginScreen extends StatelessWidget {
-  const LoginScreen({super.key});
+class SignupScreen extends StatelessWidget {
+  const SignupScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -29,7 +29,7 @@ class LoginScreen extends StatelessWidget {
                   Align(
                     alignment: Alignment.centerLeft,
                     child: TextButton(
-                      onPressed: () => context.go('/'),
+                      onPressed: () => context.pop(),
                       child: Text(
                         AppStrings.back,
                         style: AppTextStyles.bodySmall
@@ -61,14 +61,17 @@ class LoginScreen extends StatelessWidget {
                   const SizedBox(height: AppSpacing.md),
 
                   // ── Title ─────────────────────────────────────────────
-                  Text(AppStrings.welcomeBack, style: AppTextStyles.displayMedium),
+                  Text(AppStrings.joinMora,
+                      style: AppTextStyles.displayMedium.copyWith(
+                        color: AppColors.primary,
+                      )),
                   const SizedBox(height: AppSpacing.xs),
-                  const Text(AppStrings.loginSubtitle, style: AppTextStyles.hint),
+                  const Text(AppStrings.signupSubtitle, style: AppTextStyles.hint),
 
                   const SizedBox(height: AppSpacing.lg),
 
-                  // ── LOG IN / SIGN UP tabs ─────────────────────────────
-                  _AuthTabs(activeTab: 0, onSignUpTap: () => context.go('/signup')),
+                  // ── SIGN UP / LOG IN tabs ─────────────────────────────
+                  _SignupTabs(onLogInTap: () => context.pop()),
 
                   const SizedBox(height: AppSpacing.lg),
 
@@ -84,18 +87,11 @@ class LoginScreen extends StatelessWidget {
                     isPassword: true,
                   ),
 
-                  const SizedBox(height: AppSpacing.sm),
+                  const SizedBox(height: AppSpacing.xl),
 
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: Text(AppStrings.forgotPassword, style: AppTextStyles.caption),
-                  ),
-
-                  const SizedBox(height: AppSpacing.lg),
-
-                  // ── LOG IN button ─────────────────────────────────────
+                  // ── CREATE ACCOUNT button ─────────────────────────────
                   MechaButton(
-                    label: AppStrings.logIn,
+                    label: AppStrings.createAccount,
                     onTap: () => context.go('/home'),
                   ),
 
@@ -103,11 +99,11 @@ class LoginScreen extends StatelessWidget {
                   const Text(AppStrings.orDivider, style: AppTextStyles.caption),
                   const SizedBox(height: AppSpacing.md),
 
-                  // ── CREATE ACCOUNT button ─────────────────────────────
+                  // ── BACK TO LOGIN button ──────────────────────────────
                   MechaButton(
-                    label: AppStrings.createAccount,
+                    label: AppStrings.backToLogin,
                     variant: MechaButtonVariant.outlined,
-                    onTap: () => context.go('/signup'),
+                    onTap: () => context.pop(),
                   ),
 
                   const SizedBox(height: AppSpacing.xl),
@@ -121,12 +117,9 @@ class LoginScreen extends StatelessWidget {
   }
 }
 
-// ── Internal tab row widget ────────────────────────────────────────────────────
-class _AuthTabs extends StatelessWidget {
-  const _AuthTabs({required this.activeTab, required this.onSignUpTap});
-
-  final int activeTab; // 0 = LOG IN, 1 = SIGN UP
-  final VoidCallback onSignUpTap;
+class _SignupTabs extends StatelessWidget {
+  const _SignupTabs({required this.onLogInTap});
+  final VoidCallback onLogInTap;
 
   @override
   Widget build(BuildContext context) {
@@ -141,8 +134,8 @@ class _AuthTabs extends StatelessWidget {
       ),
       child: Row(
         children: [
-          _tab(AppStrings.logIn, isActive: activeTab == 0, onTap: () {}),
-          _tab(AppStrings.signUp, isActive: activeTab == 1, onTap: onSignUpTap),
+          _tab('LOG IN', isActive: false, onTap: onLogInTap),
+          _tab('SIGN UP', isActive: true, onTap: () {}),
         ],
       ),
     );
@@ -166,9 +159,7 @@ class _AuthTabs extends StatelessWidget {
           child: Text(
             label,
             style: AppTextStyles.buttonLabel.copyWith(
-              color: isActive
-                  ? AppColors.textPrimary
-                  : AppColors.textSecondary,
+              color: isActive ? AppColors.textPrimary : AppColors.textSecondary,
               fontSize: 12,
             ),
           ),
