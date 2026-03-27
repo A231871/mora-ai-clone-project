@@ -52,3 +52,14 @@ backend/coverage/
 **/ios/ServiceDefinitions.json
 **/ios/Pods/
 **/ios/.symlinks/
+
+# Unity - MoraUI 
+MoraUI/[Ll]ibrary/ 
+MoraUI/[Tt]emp/ 
+MoraUI/[Oo]bj/ 
+MoraUI/[Bb]uild/ 
+MoraUI/[Bb]uilds/ 
+MoraUI/[Ll]ogs/ 
+MoraUI/UserSettings/
+MoraUI/*.csproj
+MoraUI/*.sln

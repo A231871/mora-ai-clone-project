@@ -8,6 +8,8 @@ import '../../../shared/widgets/grid_background.dart';
 import '../../../shared/widgets/mecha_button.dart';
 import '../../../shared/widgets/mecha_text_field.dart';
 import '../../../shared/widgets/shizuki_animator.dart';
+import '../services/auth_service.dart';
+import '../../chat/chat_screen.dart';
 
 // ── Login screen with full backend AuthService + Shizuki avatar UI ─────────────
 // Merged: feature/UI (design + ShizukiAnimator) + develop (AuthService backend)
@@ -35,6 +37,24 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _submit() async {
     if (_usernameController.text.isEmpty || _passwordController.text.isEmpty) {
       return;
+    setState(() => _isLoading = false);
+
+    if (result['success']) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Welcome to Mora A.I Interface!', style: TextStyle(color: Colors.greenAccent))),
+        );
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const ChatScreen()),
+        );
+    } 
+    }else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(result['message'], style: const TextStyle(color: Colors.redAccent))),
+        );
+      }
     }
 
     setState(() {
