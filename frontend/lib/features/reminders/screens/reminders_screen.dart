@@ -35,8 +35,8 @@ class _RemindersScreenState extends State<RemindersScreen> {
     ),
     Task(
       id: '3',
-      title: "Review Mora's new features",
-      category: AppStrings.categoryMora,
+      title: "Review Shizuki's new features",
+      category: AppStrings.categoryShizuki,
       time: '18:30',
       frequency: 'Today',
     ),
@@ -53,7 +53,7 @@ class _RemindersScreenState extends State<RemindersScreen> {
     switch (category) {
       case AppStrings.categoryWork:   return AppColors.chipWork;
       case AppStrings.categoryHealth: return AppColors.chipHealth;
-      case AppStrings.categoryMora:   return AppColors.chipMora;
+      case AppStrings.categoryShizuki: return AppColors.chipMora;
       case AppStrings.categorySocial: return AppColors.chipSocial;
       default: return AppColors.primary;
     }

@@ -20,7 +20,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
   final List<Message> _messages = const [
     Message(
-      text: "Hiii~ Good morning! ✨ I'm Mora, your virtual assistant! How are you feeling today?",
+      text: "Hiii~ Good morning! ✨ I'm Shizuki, your virtual assistant! How are you feeling today?",
       isUser: false,
       timestamp: '09:00',
     ),
@@ -203,7 +203,7 @@ class _MessageBubble extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  '${isUser ? AppStrings.youSender : AppStrings.moraSender} · ${message.timestamp}',
+                  '${isUser ? AppStrings.youSender : AppStrings.shizukiSender} · ${message.timestamp}',
                   style: AppTextStyles.caption,
                 ),
               ],

@@ -23,7 +23,7 @@ class _ConfigScreenState extends State<ConfigScreen> {
   final Map<String, bool> _toggles = {
     AppStrings.darkMode:       true,
     AppStrings.notifications:  true,
-    AppStrings.moraVoice:      true,
+    AppStrings.shizukiVoice:    true,
     AppStrings.hapticFeedback: false,
     AppStrings.privacyShield:  true,
   };
@@ -31,7 +31,7 @@ class _ConfigScreenState extends State<ConfigScreen> {
   final Map<String, String> _toggleSubs = {
     AppStrings.darkMode:       AppStrings.darkModeSub,
     AppStrings.notifications:  AppStrings.notificationsSub,
-    AppStrings.moraVoice:      AppStrings.moraVoiceSub,
+    AppStrings.shizukiVoice:   AppStrings.shizukiVoiceSub,
     AppStrings.hapticFeedback: AppStrings.hapticSub,
     AppStrings.privacyShield:  AppStrings.privacySub,
   };
@@ -39,7 +39,7 @@ class _ConfigScreenState extends State<ConfigScreen> {
   final Map<String, IconData> _toggleIcons = {
     AppStrings.darkMode:       Icons.dark_mode_outlined,
     AppStrings.notifications:  Icons.notifications_outlined,
-    AppStrings.moraVoice:      Icons.mic_outlined,
+    AppStrings.shizukiVoice:   Icons.mic_outlined,
     AppStrings.hapticFeedback: Icons.vibration_outlined,
     AppStrings.privacyShield:  Icons.shield_outlined,
   };
@@ -92,7 +92,7 @@ class _ConfigScreenState extends State<ConfigScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(AppStrings.morasVoice,
+                      Text(AppStrings.shizukisVoice,
                           style: AppTextStyles.titleMedium),
                       DropdownButton<String>(
                         value: _selectedVoice,

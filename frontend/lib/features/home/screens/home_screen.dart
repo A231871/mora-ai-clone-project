@@ -7,6 +7,7 @@ import '../../../core/theme/app_text_styles.dart';
 import '../../../shared/widgets/grid_background.dart';
 import '../../../shared/widgets/glassmorphism_button.dart';
 import '../../../shared/widgets/status_chip.dart';
+import '../../../shared/widgets/shizuki_animator.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -59,7 +60,7 @@ class HomeScreen extends StatelessWidget {
                     spacing: AppSpacing.sm,
                     children: [
                       StatusChip(
-                        label: AppStrings.moraOnline,
+                        label: AppStrings.shizukiOnline,
                         color: AppColors.statusGreen,
                         textColor: AppColors.statusGreen,
                       ),
@@ -105,40 +106,21 @@ class HomeScreen extends StatelessWidget {
                         ],
                       ),
                       child: const Text(
-                        AppStrings.moraGreeting,
+                        AppStrings.shizukiGreeting,
                         style: AppTextStyles.bodyMedium,
                       ),
                     ),
                   ),
                 ),
 
-                // ── Avatar ──────────────────────────────────────────────
+                // ── Avatar (Shizuki) ─────────────────────────────────────
                 Expanded(
                   child: Center(
                     child: RepaintBoundary(
-                      child: Container(
-                        key: const ValueKey('avatar-slot'),
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.primary.withOpacity(0.4),
-                              blurRadius: 80,
-                              spreadRadius: 15,
-                            ),
-                          ],
-                        ),
-                        child: Image.asset(
-                          'assets/avatar/mora_avatar.png',
-                          width: 240,
-                          height: 300,
-                          fit: BoxFit.contain,
-                          errorBuilder: (_, __, ___) => const Icon(
-                            Icons.face,
-                            size: 180,
-                            color: AppColors.primary,
-                          ),
-                        ),
+                      key: const ValueKey('avatar-slot'),
+                      child: ShizukiAnimator(
+                        emotion: ShizukiEmotion.idle,
+                        size: 240,
                       ),
                     ),
                   ),
