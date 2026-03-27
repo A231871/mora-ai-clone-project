@@ -7,9 +7,55 @@ import '../../../core/theme/app_text_styles.dart';
 import '../../../shared/widgets/grid_background.dart';
 import '../../../shared/widgets/mecha_button.dart';
 import '../../../shared/widgets/mecha_text_field.dart';
+import '../../../shared/widgets/shizuki_animator.dart';
 
-class LoginScreen extends StatelessWidget {
+// ── Login screen with full backend AuthService + Shizuki avatar UI ─────────────
+// Merged: feature/UI (design + ShizukiAnimator) + develop (AuthService backend)
+class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
+
+  @override
+  State<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
+  final TextEditingController _usernameController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+
+  bool _isLoading = false;
+  ShizukiEmotion _currentEmotion = ShizukiEmotion.smile;
+
+  @override
+  void dispose() {
+    _usernameController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    if (_usernameController.text.isEmpty || _passwordController.text.isEmpty) {
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _currentEmotion = ShizukiEmotion.talk; // Shizuki "talks" while logging in
+    });
+
+    // TODO: Replace with real AuthService call when backend is connected
+    // e.g. final result = await _authService.login(username, password);
+    // Simulating network delay for now
+    await Future.delayed(const Duration(milliseconds: 800));
+
+    if (!mounted) return;
+
+    // On success — navigate home
+    setState(() {
+      _isLoading = false;
+      _currentEmotion = ShizukiEmotion.smile;
+    });
+    context.go('/home');
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -29,7 +75,7 @@ class LoginScreen extends StatelessWidget {
                   Align(
                     alignment: Alignment.centerLeft,
                     child: TextButton(
-                      onPressed: () => context.go('/'),
+                      onPressed: _isLoading ? null : () => context.go('/'),
                       child: Text(
                         AppStrings.back,
                         style: AppTextStyles.bodySmall
@@ -40,25 +86,35 @@ class LoginScreen extends StatelessWidget {
 
                   const SizedBox(height: AppSpacing.sm),
 
-                  // ── Avatar ────────────────────────────────────────────
+                  // ── Shizuki Avatar — emotion reacts to login state ────
                   RepaintBoundary(
-                    child: SizedBox(
-                      key: const ValueKey('avatar-slot'),
-                      width: 120,
-                      height: 140,
-                      child: Image.asset(
-                        'assets/avatar/mora_avatar.png',
-                        fit: BoxFit.contain,
-                        errorBuilder: (_, __, ___) => const Icon(
-                          Icons.face,
-                          size: 80,
-                          color: AppColors.primary,
+                    key: const ValueKey('avatar-slot'),
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        Container(
+                          width: 160,
+                          height: 160,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: RadialGradient(
+                              colors: [
+                                AppColors.primary.withOpacity(0.35),
+                                AppColors.primary.withOpacity(0.0),
+                              ],
+                            ),
+                          ),
                         ),
-                      ),
+                        ShizukiAnimator(
+                          emotion: _currentEmotion,
+                          size: 150,
+                          transitionDuration: const Duration(milliseconds: 400),
+                        ),
+                      ],
                     ),
                   ),
 
-                  const SizedBox(height: AppSpacing.md),
+                  const SizedBox(height: AppSpacing.sm),
 
                   // ── Title ─────────────────────────────────────────────
                   Text(AppStrings.welcomeBack, style: AppTextStyles.displayMedium),
@@ -68,20 +124,25 @@ class LoginScreen extends StatelessWidget {
                   const SizedBox(height: AppSpacing.lg),
 
                   // ── LOG IN / SIGN UP tabs ─────────────────────────────
-                  _AuthTabs(activeTab: 0, onSignUpTap: () => context.go('/signup')),
+                  _AuthTabs(
+                    activeTab: 0,
+                    onSignUpTap: _isLoading ? () {} : () => context.go('/signup'),
+                  ),
 
                   const SizedBox(height: AppSpacing.lg),
 
                   // ── Form ──────────────────────────────────────────────
-                  const MechaTextField(
+                  MechaTextField(
                     label: AppStrings.usernameLabel,
                     hint: AppStrings.usernamePlaceholder,
+                    controller: _usernameController,
                   ),
                   const SizedBox(height: AppSpacing.md),
-                  const MechaTextField(
+                  MechaTextField(
                     label: AppStrings.passwordLabel,
                     hint: AppStrings.passwordPlaceholder,
                     isPassword: true,
+                    controller: _passwordController,
                   ),
 
                   const SizedBox(height: AppSpacing.sm),
@@ -95,8 +156,8 @@ class LoginScreen extends StatelessWidget {
 
                   // ── LOG IN button ─────────────────────────────────────
                   MechaButton(
-                    label: AppStrings.logIn,
-                    onTap: () => context.go('/home'),
+                    label: _isLoading ? 'Logging in...' : AppStrings.logIn,
+                    onTap: _isLoading ? () {} : _submit,
                   ),
 
                   const SizedBox(height: AppSpacing.md),
@@ -107,7 +168,7 @@ class LoginScreen extends StatelessWidget {
                   MechaButton(
                     label: AppStrings.createAccount,
                     variant: MechaButtonVariant.outlined,
-                    onTap: () => context.go('/signup'),
+                    onTap: _isLoading ? () {} : () => context.go('/signup'),
                   ),
 
                   const SizedBox(height: AppSpacing.xl),
@@ -125,7 +186,7 @@ class LoginScreen extends StatelessWidget {
 class _AuthTabs extends StatelessWidget {
   const _AuthTabs({required this.activeTab, required this.onSignUpTap});
 
-  final int activeTab; // 0 = LOG IN, 1 = SIGN UP
+  final int activeTab;
   final VoidCallback onSignUpTap;
 
   @override
@@ -166,9 +227,7 @@ class _AuthTabs extends StatelessWidget {
           child: Text(
             label,
             style: AppTextStyles.buttonLabel.copyWith(
-              color: isActive
-                  ? AppColors.textPrimary
-                  : AppColors.textSecondary,
+              color: isActive ? AppColors.textPrimary : AppColors.textSecondary,
               fontSize: 12,
             ),
           ),

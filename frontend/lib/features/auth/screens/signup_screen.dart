@@ -7,6 +7,7 @@ import '../../../core/theme/app_text_styles.dart';
 import '../../../shared/widgets/grid_background.dart';
 import '../../../shared/widgets/mecha_button.dart';
 import '../../../shared/widgets/mecha_text_field.dart';
+import '../../../shared/widgets/shizuki_animator.dart';
 
 class SignupScreen extends StatelessWidget {
   const SignupScreen({super.key});
@@ -40,25 +41,35 @@ class SignupScreen extends StatelessWidget {
 
                   const SizedBox(height: AppSpacing.sm),
 
-                  // ── Avatar ────────────────────────────────────────────
+                  // ── Shizuki Avatar (cheer — excited to join!) ─────────
                   RepaintBoundary(
-                    child: SizedBox(
-                      key: const ValueKey('avatar-slot'),
-                      width: 120,
-                      height: 140,
-                      child: Image.asset(
-                        'assets/avatar/mora_avatar.png',
-                        fit: BoxFit.contain,
-                        errorBuilder: (_, __, ___) => const Icon(
-                          Icons.face,
-                          size: 80,
-                          color: AppColors.primary,
+                    key: const ValueKey('avatar-slot'),
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        Container(
+                          width: 160,
+                          height: 160,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: RadialGradient(
+                              colors: [
+                                AppColors.accent.withOpacity(0.35),
+                                AppColors.accent.withOpacity(0.0),
+                              ],
+                            ),
+                          ),
                         ),
-                      ),
+                        const ShizukiAnimator(
+                          emotion: ShizukiEmotion.cheer,
+                          size: 150,
+                          transitionDuration: Duration(milliseconds: 400),
+                        ),
+                      ],
                     ),
                   ),
 
-                  const SizedBox(height: AppSpacing.md),
+                  const SizedBox(height: AppSpacing.sm),
 
                   // ── Title ─────────────────────────────────────────────
                   Text(AppStrings.joinMora,
