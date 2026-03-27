@@ -5,6 +5,7 @@ const cors = require('cors');
 const connectDB = require('./src/config/db');
 const authRoutes = require('./src/routes/authRoutes');
 const { initSocket } = require('./src/socket');
+const { initCronJobs } = require('./src/services/cron.service');
 
 const app = express();
 const server = http.createServer(app);
@@ -27,6 +28,9 @@ app.get('/', (req, res) => {
 
 // Initialize Socket.io
 initSocket(server);
+
+// Initialize Cron Jobs
+initCronJobs();
 
 // Start Server
 server.listen(PORT, () => {
