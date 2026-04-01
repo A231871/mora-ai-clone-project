@@ -1,3 +1,4 @@
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
@@ -9,7 +10,6 @@ import '../../../shared/widgets/mecha_button.dart';
 import '../../../shared/widgets/mecha_text_field.dart';
 import '../../../shared/widgets/shizuki_animator.dart';
 import '../services/auth_service.dart';
-import '../../chat/chat_screen.dart';
 
 // ── Login screen with full backend AuthService + Shizuki avatar UI ─────────────
 // Merged: feature/UI (design + ShizukiAnimator) + develop (AuthService backend)
@@ -34,27 +34,14 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
+  final AuthService _authService = AuthService();
+
   Future<void> _submit() async {
     if (_usernameController.text.isEmpty || _passwordController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please fill in both fields', style: TextStyle(color: Colors.redAccent))),
+      );
       return;
-    setState(() => _isLoading = false);
-
-    if (result['success']) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Welcome to Mora A.I Interface!', style: TextStyle(color: Colors.greenAccent))),
-        );
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const ChatScreen()),
-        );
-    } 
-    }else {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(result['message'], style: const TextStyle(color: Colors.redAccent))),
-        );
-      }
     }
 
     setState(() {
@@ -62,19 +49,28 @@ class _LoginScreenState extends State<LoginScreen> {
       _currentEmotion = ShizukiEmotion.talk; // Shizuki "talks" while logging in
     });
 
-    // TODO: Replace with real AuthService call when backend is connected
-    // e.g. final result = await _authService.login(username, password);
-    // Simulating network delay for now
-    await Future.delayed(const Duration(milliseconds: 800));
+    final result = await _authService.login(
+      _usernameController.text.trim(), 
+      _passwordController.text.trim(),
+    );
 
     if (!mounted) return;
 
-    // On success — navigate home
     setState(() {
       _isLoading = false;
-      _currentEmotion = ShizukiEmotion.smile;
+      _currentEmotion = result['success'] ? ShizukiEmotion.smile : ShizukiEmotion.sad;
     });
-    context.go('/home');
+
+    if (result['success']) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Welcome to Mora A.I Interface!', style: TextStyle(color: Colors.greenAccent))),
+      );
+      context.go('/home');
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(result['message'] ?? 'Login failed', style: TextStyle(color: Colors.redAccent))),
+      );
+    }
   }
 
   @override
@@ -97,7 +93,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: TextButton(
                       onPressed: _isLoading ? null : () => context.go('/'),
                       child: Text(
-                        AppStrings.back,
+                        AppLocalizations.of(context)!.back,
                         style: AppTextStyles.bodySmall
                             .copyWith(color: AppColors.textSecondary),
                       ),
@@ -137,9 +133,9 @@ class _LoginScreenState extends State<LoginScreen> {
                   const SizedBox(height: AppSpacing.sm),
 
                   // ── Title ─────────────────────────────────────────────
-                  Text(AppStrings.welcomeBack, style: AppTextStyles.displayMedium),
+                  Text(AppLocalizations.of(context)!.welcomeBack, style: AppTextStyles.displayMedium),
                   const SizedBox(height: AppSpacing.xs),
-                  const Text(AppStrings.loginSubtitle, style: AppTextStyles.hint),
+                  Text(AppLocalizations.of(context)!.loginSubtitle, style: AppTextStyles.hint),
 
                   const SizedBox(height: AppSpacing.lg),
 
@@ -153,14 +149,14 @@ class _LoginScreenState extends State<LoginScreen> {
 
                   // ── Form ──────────────────────────────────────────────
                   MechaTextField(
-                    label: AppStrings.usernameLabel,
-                    hint: AppStrings.usernamePlaceholder,
+                    label: AppLocalizations.of(context)!.usernameLabel,
+                    hint: AppLocalizations.of(context)!.usernamePlaceholder,
                     controller: _usernameController,
                   ),
                   const SizedBox(height: AppSpacing.md),
                   MechaTextField(
-                    label: AppStrings.passwordLabel,
-                    hint: AppStrings.passwordPlaceholder,
+                    label: AppLocalizations.of(context)!.passwordLabel,
+                    hint: AppLocalizations.of(context)!.passwordPlaceholder,
                     isPassword: true,
                     controller: _passwordController,
                   ),
@@ -169,24 +165,34 @@ class _LoginScreenState extends State<LoginScreen> {
 
                   Align(
                     alignment: Alignment.centerRight,
-                    child: Text(AppStrings.forgotPassword, style: AppTextStyles.caption),
+                    child: GestureDetector(
+                      onTap: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                              content: Text('Please login via Google', style: TextStyle(color: Colors.cyanAccent)),
+                              backgroundColor: AppColors.bgCard,
+                          ),
+                        );
+                      },
+                      child: Text(AppLocalizations.of(context)!.forgotPassword, style: AppTextStyles.caption.copyWith(decoration: TextDecoration.underline)),
+                    ),
                   ),
 
                   const SizedBox(height: AppSpacing.lg),
 
                   // ── LOG IN button ─────────────────────────────────────
                   MechaButton(
-                    label: _isLoading ? 'Logging in...' : AppStrings.logIn,
+                    label: _isLoading ? 'Logging in...' : AppLocalizations.of(context)!.logIn,
                     onTap: _isLoading ? () {} : _submit,
                   ),
 
                   const SizedBox(height: AppSpacing.md),
-                  const Text(AppStrings.orDivider, style: AppTextStyles.caption),
+                  Text(AppLocalizations.of(context)!.orDivider, style: AppTextStyles.caption),
                   const SizedBox(height: AppSpacing.md),
 
                   // ── CREATE ACCOUNT button ─────────────────────────────
                   MechaButton(
-                    label: AppStrings.createAccount,
+                    label: AppLocalizations.of(context)!.createAccount,
                     variant: MechaButtonVariant.outlined,
                     onTap: _isLoading ? () {} : () => context.go('/signup'),
                   ),
@@ -222,8 +228,8 @@ class _AuthTabs extends StatelessWidget {
       ),
       child: Row(
         children: [
-          _tab(AppStrings.logIn, isActive: activeTab == 0, onTap: () {}),
-          _tab(AppStrings.signUp, isActive: activeTab == 1, onTap: onSignUpTap),
+          _tab(AppLocalizations.of(context)!.logIn, isActive: activeTab == 0, onTap: () {}),
+          _tab(AppLocalizations.of(context)!.signUp, isActive: activeTab == 1, onTap: onSignUpTap),
         ],
       ),
     );

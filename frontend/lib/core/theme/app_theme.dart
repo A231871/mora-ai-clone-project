@@ -61,17 +61,17 @@ class AppTheme {
 
         // ── Switch ─────────────────────────────────────────────────────────
         switchTheme: SwitchThemeData(
-          thumbColor: MaterialStateProperty.resolveWith((states) {
-            return states.contains(MaterialState.selected)
+          thumbColor: WidgetStateProperty.resolveWith((states) {
+            return states.contains(WidgetState.selected)
                 ? AppColors.textPrimary
                 : AppColors.textSecondary;
           }),
-          trackColor: MaterialStateProperty.resolveWith((states) {
-            return states.contains(MaterialState.selected)
+          trackColor: WidgetStateProperty.resolveWith((states) {
+            return states.contains(WidgetState.selected)
                 ? AppColors.primary
                 : AppColors.bgCard;
           }),
-          trackOutlineColor: MaterialStateProperty.all(Colors.transparent),
+          trackOutlineColor: WidgetStateProperty.all(Colors.transparent),
         ),
 
         // ── Progress Indicator ─────────────────────────────────────────────
@@ -86,7 +86,7 @@ class AppTheme {
           foregroundColor: AppColors.textPrimary,
         ),
 
-        textTheme: const TextTheme(
+        textTheme: TextTheme(
           displayLarge:  AppTextStyles.displayLarge,
           displayMedium: AppTextStyles.displayMedium,
           titleLarge:    AppTextStyles.titleLarge,

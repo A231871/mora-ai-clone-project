@@ -2,13 +2,17 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-const model = genAI.getGenerativeModel({
-  model: "gemini-2.5-flash", 
-  systemInstruction: "You are Mora, a cute AI assistant with a mecha anime style (một trợ lý AI dễ thương, phong cách mecha anime). You are helpful, proactive, and occasionally use mecha anime terminology. Keep responses concise and engaging for a mobile UI."
-});
-
-const generateResponseWithHistory = async (userMessage, dbHistory) => {
+const generateResponseWithHistory = async (userMessage, dbHistory, lang = 'en') => {
   try {
+    const sysInst = lang === 'vi' 
+      ? "You are Shizuki, a cute AI assistant with a mecha anime style (một trợ lý AI dễ thương, phong cách mecha anime). Hãy luôn phản hồi bằng TIẾNG VIỆT, giữ phong cách thân thiện, dễ thương, hữu ích và thỉnh thoảng dùng thuật ngữ mecha anime. Trả lời ngắn gọn."
+      : "You are Shizuki, a cute AI assistant with a mecha anime style. You MUST ALWAYS respond in ENGLISH. Be proactive, helpful, and occasionally use mecha anime terminology. Keep responses concise.";
+
+    const model = genAI.getGenerativeModel({
+      model: "gemini-2.5-flash", 
+      systemInstruction: sysInst
+    });
+
     // 1. Transform DB history into Gemini's format
     let structuredHistory = dbHistory.map(msg => ({
       role: msg.role, 

@@ -1,3 +1,4 @@
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
@@ -27,7 +28,7 @@ class StartScreen extends StatelessWidget {
 
                   // ── SYSTEM ONLINE chip ────────────────────────────────
                   const StatusChip(
-                    label: AppStrings.systemOnline,
+                    label: AppLocalizations.of(context)!.systemOnline,
                     color: AppColors.statusGreen,
                     textColor: AppColors.statusGreen,
                   ),
@@ -36,7 +37,7 @@ class StartScreen extends StatelessWidget {
 
                   // ── MORA title ────────────────────────────────────────
                   Text(
-                    AppStrings.moraTitle,
+                    AppLocalizations.of(context)!.moraTitle,
                     style: AppTextStyles.displayLarge.copyWith(
                       shadows: [
                         Shadow(
@@ -50,7 +51,7 @@ class StartScreen extends StatelessWidget {
                   const SizedBox(height: AppSpacing.xs),
 
                   // ── VIRTUAL ASSISTANT ─────────────────────────────────
-                  const Text(AppStrings.subtitle, style: AppTextStyles.subtitle),
+                  Text(AppLocalizations.of(context)!.subtitle, style: AppTextStyles.subtitle),
 
                   const Spacer(),
 
@@ -85,20 +86,20 @@ class StartScreen extends StatelessWidget {
                   const Spacer(),
 
                   // ── Version ───────────────────────────────────────────
-                  Text(AppStrings.appVersion, style: AppTextStyles.caption),
+                  Text(AppLocalizations.of(context)!.appVersion, style: AppTextStyles.caption),
 
                   const SizedBox(height: AppSpacing.lg),
 
                   // ── TAP TO START button ───────────────────────────────
                   MechaButton(
-                    label: AppStrings.tapToStart,
+                    label: AppLocalizations.of(context)!.tapToStart,
                     onTap: () => context.go('/login'),
                   ),
 
                   const SizedBox(height: AppSpacing.md),
 
                   // ── Caption ───────────────────────────────────────────
-                  const Text(AppStrings.startCaption, style: AppTextStyles.caption),
+                  Text(AppLocalizations.of(context)!.startCaption, style: AppTextStyles.caption),
 
                   const SizedBox(height: AppSpacing.xl),
                 ],

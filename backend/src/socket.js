@@ -53,8 +53,7 @@ const initSocket = (server) => {
     socket.on("reminder:fetch_pending", async () => {
       try {
         const pendingReminders = await Reminder.find({
-          userId: currentUserId,
-          isCompleted: false
+          userId: currentUserId
         }).sort({ scheduledTime: 1 });
         
         socket.emit("reminder:pending_loaded", pendingReminders);
@@ -69,12 +68,12 @@ const initSocket = (server) => {
           userId: currentUserId,
           message: data.task,
           scheduledTime: new Date(data.scheduledTime),
-          isCompleted: false
+          isCompleted: false,
+          daysOfWeek: data.daysOfWeek || []
         });
 
         const pendingReminders = await Reminder.find({
-          userId: currentUserId,
-          isCompleted: false
+          userId: currentUserId
         }).sort({ scheduledTime: 1 });
         
         socket.emit("reminder:pending_loaded", pendingReminders);
@@ -83,10 +82,66 @@ const initSocket = (server) => {
       }
     });
 
+    socket.on("reminder:update", async (data) => {
+      try {
+        let updateFields = {};
+        if (data.isCompleted !== undefined) updateFields.isCompleted = data.isCompleted;
+        if (data.task) updateFields.message = data.task;
+        if (data.scheduledTime) updateFields.scheduledTime = new Date(data.scheduledTime);
+        if (data.daysOfWeek !== undefined) updateFields.daysOfWeek = data.daysOfWeek;
+
+        await Reminder.findByIdAndUpdate(data.id, updateFields);
+        const pendingReminders = await Reminder.find({
+          userId: currentUserId
+        }).sort({ scheduledTime: 1 });
+        socket.emit("reminder:pending_loaded", pendingReminders);
+      } catch (err) {
+        console.error("Error updating reminder:", err);
+      }
+    });
+
+    socket.on("reminder:delete", async (data) => {
+      try {
+        await Reminder.findByIdAndDelete(data.id);
+        const pendingReminders = await Reminder.find({
+          userId: currentUserId
+        }).sort({ scheduledTime: 1 });
+        socket.emit("reminder:pending_loaded", pendingReminders);
+      } catch (err) {
+        console.error("Error deleting reminder:", err);
+      }
+    });
+
+    socket.on("reminder:delete_all", async () => {
+      try {
+        await Reminder.deleteMany({ userId: currentUserId });
+        socket.emit("reminder:pending_loaded", []);
+      } catch (err) {
+        console.error("Error deleting all reminders:", err);
+      }
+    });
+
+    socket.on("reminder:complete_all", async () => {
+      try {
+        await Reminder.updateMany(
+          { userId: currentUserId, isCompleted: false },
+          { $set: { isCompleted: true } }
+        );
+        const pendingReminders = await Reminder.find({
+          userId: currentUserId
+        }).sort({ scheduledTime: 1 });
+        socket.emit("reminder:pending_loaded", pendingReminders);
+      } catch (err) {
+        console.error("Error completing all reminders:", err);
+      }
+    });
+
     socket.on("chat:send", async (data) => {
       try {
         console.log(`[Chat] Received from user: ${data.message}`);
         socket.emit("chat:typing", { status: true });
+
+        const lang = data.lang || 'en';
 
         // 0. Parse Intent to redirect Chat flow vs Notification Schedule mapping
         const intentData = await parseReminderIntent(data.message);
@@ -110,8 +165,12 @@ const initSocket = (server) => {
           });
           
           // Force the server to format the UTC time into Vietnam local time for display
-          const displayTime = new Date(intentData.time).toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
-          finalAiReply = `[ HỆ THỐNG ] Đã xác nhận chỉ thị! Em sẽ nhắc anh: ${intentData.task} vào lúc ${displayTime} 🤖`;
+          const displayTime = new Date(intentData.time).toLocaleString(lang === 'vi' ? 'vi-VN' : 'en-US', { timeZone: 'Asia/Ho_Chi_Minh' });
+          if (lang === 'vi') {
+             finalAiReply = `[ HỆ THỐNG ] Đã xác nhận chỉ thị! Em sẽ nhắc anh: ${intentData.task} vào lúc ${displayTime} 🤖`;
+          } else {
+             finalAiReply = `[ SYSTEM ] Acknowledged! I will remind you: ${intentData.task} at ${displayTime} 🤖`;
+          }
         } else {
           // Native Flow
           let recentHistory = await ChatMessage.find({ userId: currentUserId })
@@ -120,7 +179,7 @@ const initSocket = (server) => {
               .lean(); 
               
           recentHistory = recentHistory.reverse(); 
-          finalAiReply = await generateResponseWithHistory(data.message, recentHistory);
+          finalAiReply = await generateResponseWithHistory(data.message, recentHistory, lang);
         }
 
         const savedAiMessage = await ChatMessage.create({

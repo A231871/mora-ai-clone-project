@@ -1,70 +1,113 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/providers/language_provider.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/services/chat_service.dart';
+import '../../../core/services/voice_service.dart';
 import '../../../shared/widgets/grid_background.dart';
 import '../../../shared/widgets/mecha_app_bar.dart';
-import '../models/message.dart';
 
-class ChatScreen extends StatefulWidget {
+enum MoraState { idle, thinking, talking }
+
+class ChatScreen extends ConsumerStatefulWidget {
   const ChatScreen({super.key});
 
   @override
-  State<ChatScreen> createState() => _ChatScreenState();
+  ConsumerState<ChatScreen> createState() => _ChatScreenState();
 }
 
-class _ChatScreenState extends State<ChatScreen> {
+class _ChatScreenState extends ConsumerState<ChatScreen> {
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
-  final List<Message> _messages = const [
-    Message(
-      text: "Hiii~ Good morning! ✨ I'm Shizuki, your virtual assistant! How are you feeling today?",
-      isUser: false,
-      timestamp: '09:00',
-    ),
-    Message(
-      text: "I'm doing great! Can you remind me about my 3pm meeting?",
-      isUser: true,
-      timestamp: '09:01',
-    ),
-    Message(
-      text: "Of course! ✦ I've set a reminder for your 3:00 PM meeting. I'll ping you 15 minutes before! Is there anything else you need? (◕‿◕✿)",
-      isUser: false,
-      timestamp: '09:01',
-    ),
-    Message(
-      text: "What's the weather like today?",
-      isUser: true,
-      timestamp: '09:02',
-    ),
-    Message(
-      text: "It's a beautiful sunny day, 24°C! ☀ Perfect for a walk outside~. Don't forget your sunscreen, okay? uwu",
-      isUser: false,
-      timestamp: '09:02',
-    ),
-  ];
+  final ChatService _chatService = ChatService();
+  final VoiceService _voiceService = VoiceService();
+  final List<Map<String, dynamic>> _messages = [];
 
-  List<Message> _dynamicMessages = [];
+  MoraState _moraState = MoraState.idle;
+  Timer? _talkingTimer;
+  StreamSubscription<List<dynamic>>? _historySub;
+  StreamSubscription<Map<String, dynamic>>? _messageSub;
+  StreamSubscription<bool>? _typingSub;
+  StreamSubscription<String>? _systemAlertSub;
+
+  bool _isListening = false;
 
   @override
   void initState() {
     super.initState();
-    _dynamicMessages = List.from(_messages);
+    
+    _voiceService.init();
+    _chatService.connect();
+    _chatService.fetchHistory();
+
+    _historySub = _chatService.historyStream.listen((historyList) {
+      if (mounted) {
+        setState(() {
+          _messages.clear();
+          for (var msg in historyList) {
+            _messages.add({
+               'sender': msg['role'] == 'user' ? 'User' : 'Mora',
+               'message': msg['content'],
+               'timestamp': msg['timestamp']
+            });
+          }
+        });
+        _scrollToBottom();
+      }
+    });
+
+    _messageSub = _chatService.messageStream.listen((messageData) {
+      if (mounted) {
+        setState(() {
+          _messages.add(messageData); 
+          if (messageData['sender'] == 'Mora') {
+            _moraState = MoraState.talking;
+            _startTalkingTimer();
+            _voiceService.speak(messageData['message']);
+          }
+        });
+        _scrollToBottom();
+      }
+    });
+
+    _typingSub = _chatService.typingStream.listen((isTyping) {
+      if (mounted) {
+        setState(() {
+          if (isTyping) {
+            _moraState = MoraState.thinking;
+            _talkingTimer?.cancel();
+          } else {
+             if (_moraState == MoraState.thinking) {
+                 _moraState = MoraState.idle; 
+             }
+          }
+        });
+      }
+    });
+
+    _systemAlertSub = _chatService.systemAlertStream.listen((alertMessage) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("[ SYSTEM OVERRIDE ]\n$alertMessage", style: TextStyle(color: Colors.white, fontFamily: 'monospace')),
+            backgroundColor: Colors.redAccent,
+            duration: const Duration(seconds: 10),
+          ),
+        );
+        _voiceService.speak(alertMessage);
+      }
+    });
   }
 
-  void _sendMessage() {
-    final text = _controller.text.trim();
-    if (text.isEmpty) return;
-    setState(() {
-      _dynamicMessages.add(Message(
-        text: text,
-        isUser: true,
-        timestamp: TimeOfDay.now().format(context),
-      ));
-    });
-    _controller.clear();
+  void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
         _scrollController.animateTo(
@@ -76,10 +119,66 @@ class _ChatScreenState extends State<ChatScreen> {
     });
   }
 
+  void _startTalkingTimer() {
+    _talkingTimer?.cancel();
+    _talkingTimer = Timer(const Duration(seconds: 4), () {
+      if (mounted && _moraState == MoraState.talking) {
+        setState(() {
+          _moraState = MoraState.idle;
+        });
+      }
+    });
+  }
+
+  void _sendMessage() {
+    final text = _controller.text.trim();
+    if (text.isEmpty) return;
+    
+    _chatService.sendMessage(text);
+    _controller.clear();
+    _voiceService.stop();
+  }
+
+  Future<void> _toggleListening() async {
+    final status = await Permission.microphone.request();
+    if (!status.isGranted) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Microphone permission required for voice input.', style: TextStyle(color: Colors.redAccent)),
+            backgroundColor: AppColors.bgCard,
+          ),
+        );
+      }
+      return;
+    }
+
+    if (_isListening) {
+      await _voiceService.stopListening();
+      if (mounted) setState(() => _isListening = false);
+    } else {
+      if (mounted) setState(() => _isListening = true);
+      _controller.clear();
+      await _voiceService.startListening((recognizedText) {
+        if (mounted) {
+          setState(() {
+            _controller.text = recognizedText;
+          });
+        }
+      });
+    }
+  }
+
   @override
   void dispose() {
     _controller.dispose();
     _scrollController.dispose();
+    _talkingTimer?.cancel();
+    _historySub?.cancel();
+    _messageSub?.cancel();
+    _typingSub?.cancel();
+    _systemAlertSub?.cancel();
+    _voiceService.stop();
     super.dispose();
   }
 
@@ -88,7 +187,7 @@ class _ChatScreenState extends State<ChatScreen> {
     return Scaffold(
       backgroundColor: AppColors.bgDeep,
       appBar: MechaAppBar(
-        title: AppStrings.chatMode,
+        title: AppLocalizations.of(context)!.chatMode,
         trailing: const Icon(Icons.local_florist_outlined,
             color: AppColors.primary, size: 20),
       ),
@@ -100,24 +199,24 @@ class _ChatScreenState extends State<ChatScreen> {
               // ── TODAY label ───────────────────────────────────────────
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
-                child: const Text(AppStrings.todayLabel,
+                child: Text(AppLocalizations.of(context)!.todayLabel,
                     style: AppTextStyles.sectionLabel),
               ),
 
               // ── Messages list ─────────────────────────────────────────
               Expanded(
-                child: _dynamicMessages.isEmpty
-                    ? const Center(
-                        child: Text(AppStrings.noChatYet,
+                child: _messages.isEmpty
+                    ? Center(
+                        child: Text(AppLocalizations.of(context)!.noChatYet,
                             style: AppTextStyles.hint),
                       )
                     : ListView.builder(
                         controller: _scrollController,
                         padding: const EdgeInsets.symmetric(
                             horizontal: AppSpacing.md),
-                        itemCount: _dynamicMessages.length,
+                        itemCount: _messages.length,
                         itemBuilder: (_, i) =>
-                            _MessageBubble(message: _dynamicMessages[i]),
+                            _MessageBubble(message: _messages[i]),
                       ),
               ),
 
@@ -125,6 +224,8 @@ class _ChatScreenState extends State<ChatScreen> {
               _InputBar(
                 controller: _controller,
                 onSend: _sendMessage,
+                isListening: _isListening,
+                onToggleListen: _toggleListening,
               ),
             ],
           ),
@@ -137,11 +238,23 @@ class _ChatScreenState extends State<ChatScreen> {
 // ── Message bubble ─────────────────────────────────────────────────────────────
 class _MessageBubble extends StatelessWidget {
   const _MessageBubble({required this.message});
-  final Message message;
+  final Map<String, dynamic> message;
 
   @override
   Widget build(BuildContext context) {
-    final isUser = message.isUser;
+    final isUser = message['sender'] == 'User';
+    final text = message['message'] ?? '';
+    
+    DateTime? msgTime;
+    if (message['timestamp'] != null) {
+        msgTime = DateTime.tryParse(message['timestamp']);
+    }
+    String timeStr = "";
+    if (msgTime != null) {
+       final local = msgTime.toLocal();
+       timeStr = "${local.hour.toString().padLeft(2, '0')}:${local.minute.toString().padLeft(2, '0')}";
+    }
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
       child: Row(
@@ -199,11 +312,27 @@ class _MessageBubble extends StatelessWidget {
                             ),
                           ],
                   ),
-                  child: Text(message.text, style: AppTextStyles.bodyMedium),
+                  child: MarkdownBody(
+                    data: text,
+                    styleSheet: MarkdownStyleSheet(
+                      p: AppTextStyles.bodyMedium.copyWith(color: isUser ? Colors.white : AppColors.textPrimary),
+                      strong: AppTextStyles.bodyMedium.copyWith(color: isUser ? Colors.white : AppColors.primary, fontWeight: FontWeight.bold),
+                      em: AppTextStyles.bodyMedium.copyWith(fontStyle: FontStyle.italic),
+                      code: TextStyle(
+                         color: AppColors.primary,
+                         backgroundColor: Colors.black54,
+                         fontFamily: 'monospace',
+                      ),
+                      codeblockDecoration: BoxDecoration(
+                         color: Colors.black87,
+                         border: Border.all(color: AppColors.primary.withOpacity(0.5)),
+                      ),
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  '${isUser ? AppStrings.youSender : AppStrings.shizukiSender} · ${message.timestamp}',
+                  '${isUser ? AppLocalizations.of(context)!.youSender : AppLocalizations.of(context)!.shizukiSender} · $timeStr',
                   style: AppTextStyles.caption,
                 ),
               ],
@@ -234,9 +363,11 @@ class _MessageBubble extends StatelessWidget {
 
 // ── Input bar ──────────────────────────────────────────────────────────────────
 class _InputBar extends StatelessWidget {
-  const _InputBar({required this.controller, required this.onSend});
+  const _InputBar({required this.controller, required this.onSend, required this.isListening, required this.onToggleListen});
   final TextEditingController controller;
   final VoidCallback onSend;
+  final bool isListening;
+  final VoidCallback onToggleListen;
 
   @override
   Widget build(BuildContext context) {
@@ -253,12 +384,27 @@ class _InputBar extends StatelessWidget {
       ),
       child: Row(
         children: [
+          GestureDetector(
+            onTap: onToggleListen,
+            child: Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: isListening ? Colors.redAccent.withOpacity(0.2) : AppColors.bgCard,
+                shape: BoxShape.circle,
+                border: Border.all(color: isListening ? Colors.redAccent : AppColors.primary.withOpacity(0.5)),
+              ),
+              child: Icon(isListening ? Icons.mic : Icons.mic_none,
+                  color: isListening ? Colors.redAccent : AppColors.primary, size: 20),
+            ),
+          ),
+          const SizedBox(width: AppSpacing.sm),
           Expanded(
             child: TextField(
               controller: controller,
               style: AppTextStyles.bodyMedium,
               decoration: InputDecoration(
-                hintText: AppStrings.chatHint,
+                hintText: AppLocalizations.of(context)!.chatHint,
                 hintStyle: AppTextStyles.hint,
                 filled: true,
                 fillColor: AppColors.bgCard,

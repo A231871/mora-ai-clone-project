@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../core/services/chat_service.dart';
 
 class ChatScreen extends StatefulWidget {
-  const ChatScreen({Key? key}) : super(key: key);
+  const ChatScreen({super.key});
 
   @override
   State<ChatScreen> createState() => _ChatScreenState();
@@ -51,7 +51,7 @@ class _ChatScreenState extends State<ChatScreen> {
       // Base dark theme for Mecha aesthetic
       backgroundColor: const Color(0xFF0F0F0F), 
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           'MORA // CORE LINK', 
           style: TextStyle(
             color: Colors.cyanAccent, 
@@ -87,7 +87,7 @@ class _ChatScreenState extends State<ChatScreen> {
               builder: (context, snapshot) {
                 final isTyping = snapshot.data ?? false;
                 if (isTyping) {
-                  return const Padding(
+                  return Padding(
                     padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
                     child: Align(
                       alignment: Alignment.centerLeft,
@@ -136,7 +136,7 @@ class _ChatScreenState extends State<ChatScreen> {
         ),
         child: Text(
           message['message'] ?? '',
-          style: const TextStyle(color: Colors.white, fontSize: 15),
+          style: TextStyle(color: Colors.white, fontSize: 15),
         ),
       ),
     );
@@ -151,24 +151,24 @@ class _ChatScreenState extends State<ChatScreen> {
           Expanded(
             child: TextField(
               controller: _messageController,
-              style: const TextStyle(color: Colors.white),
+              style: TextStyle(color: Colors.white),
               textInputAction: TextInputAction.send,
               onSubmitted: (_) => _sendMessage(),
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 hintText: 'Input command...',
-                hintStyle: const TextStyle(color: Colors.white38),
+                hintStyle: TextStyle(color: Colors.white38),
                 isDense: true,
                 filled: true,
-                fillColor: const Color(0xFF1A1A1A),
-                enabledBorder: const OutlineInputBorder(
+                fillColor: Color(0xFF1A1A1A),
+                enabledBorder: OutlineInputBorder(
                   borderSide: BorderSide(color: Colors.cyanAccent, width: 0.5),
                   borderRadius: BorderRadius.zero, // Sharp corners
                 ),
-                focusedBorder: const OutlineInputBorder(
+                focusedBorder: OutlineInputBorder(
                   borderSide: BorderSide(color: Colors.cyanAccent, width: 1.5),
                   borderRadius: BorderRadius.zero,
                 ),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14.0),
+                contentPadding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 14.0),
               ),
             ),
           ),
