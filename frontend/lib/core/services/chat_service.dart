@@ -1,6 +1,7 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart'; // Added for debugPrint
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:socket_io_client/socket_io_client.dart' as IO;
+import 'package:socket_io_client/socket_io_client.dart' as io; // Changed IO to io
 import '../constants/api_constants.dart';
 
 class ChatService {
@@ -9,7 +10,7 @@ class ChatService {
   factory ChatService() => _instance;
   ChatService._internal();
 
-  IO.Socket? _socket;
+  io.Socket? _socket;
   
   final _historyController = StreamController<List<dynamic>>.broadcast();
   Stream<List<dynamic>> get historyStream => _historyController.stream;
@@ -29,7 +30,7 @@ class ChatService {
   // Stream for Pending Mission Logs
   final _pendingRemindersController = StreamController<List<dynamic>>.broadcast();
   Stream<List<dynamic>> get pendingRemindersStream => _pendingRemindersController.stream;
-  List<dynamic> currentReminders = [];
+  List<dynamic> currentReminders =[];
 
   Future<void> connect() async {
     if (_socket != null && _socket!.connected) return;
@@ -38,17 +39,18 @@ class ChatService {
     final token = prefs.getString('jwt_token');
 
     if (token == null) {
-      print("[ChatService] Cannot connect: No JWT token found");
+      debugPrint("[ChatService] Cannot connect: No JWT token found");
       return;
     }
 
-    print("[ChatService] Connecting to WebSocket...");
+    debugPrint("[ChatService] Connecting to WebSocket...");
 
-    _socket = IO.io(
+    _socket = io.io(
       ApiConstants.socketUrl,
-      IO.OptionBuilder()
+      io.OptionBuilder()
           .setTransports(['websocket'])
           .disableAutoConnect()
+          .enableForceNew() // LOGIC FIX: Prevents duplicate listeners and cached socket bugs on logout/login
           .setAuth({'token': token})
           .build(),
     );
@@ -56,7 +58,7 @@ class ChatService {
     _socket!.connect();
 
     _socket!.onConnect((_) {
-      print("[ChatService] Connected to Server successfully");
+      debugPrint("[ChatService] Connected to Server successfully");
       
       // FETCH HISTORY AUTOMATICALLY THE MOMENT WE CONNECT!
       _socket!.emit('chat:fetch_history');
@@ -68,7 +70,7 @@ class ChatService {
     });
 
     _socket!.onConnectError((err) {
-      print("[ChatService] Connection Error: $err");
+      debugPrint("[ChatService] Connection Error: $err");
     });
 
     // Listen for AI replies
@@ -105,6 +107,12 @@ class ChatService {
   void fetchHistory() {
     if (_socket != null && _socket!.connected) {
       _socket!.emit('chat:fetch_history');
+    }
+  }
+
+  void clearChatHistory() {
+    if (_socket != null && _socket!.connected) {
+      _socket!.emit('chat:clear_history');
     }
   }
 
@@ -163,12 +171,12 @@ class ChatService {
         'timestamp': DateTime.now().toIso8601String(),
       });
     } else {
-      print("[ChatService] Error: Socket not connected!");
+      debugPrint("[ChatService] Error: Socket not connected!");
     }
   }
 
   void disconnect() {
-    print("[ChatService] Disconnecting WebSocket...");
+    debugPrint("[ChatService] Disconnecting WebSocket...");
     _socket?.disconnect();
     _socket?.dispose();
     _socket = null;

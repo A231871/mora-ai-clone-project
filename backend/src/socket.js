@@ -136,12 +136,22 @@ const initSocket = (server) => {
       }
     });
 
+    socket.on("chat:clear_history", async () => {
+      try {
+        await ChatMessage.deleteMany({ userId: currentUserId });
+        socket.emit("chat:history_loaded", []);
+      } catch (err) {
+        console.error("Error clearing chat history:", err);
+      }
+    });
+
     socket.on("chat:send", async (data) => {
       try {
         console.log(`[Chat] Received from user: ${data.message}`);
         socket.emit("chat:typing", { status: true });
 
         const lang = data.lang || 'en';
+        console.log("[DEBUG] Chat Payload Lang:", lang);
 
         // 0. Parse Intent to redirect Chat flow vs Notification Schedule mapping
         const intentData = await parseReminderIntent(data.message);
@@ -189,7 +199,7 @@ const initSocket = (server) => {
         });
 
         socket.emit("chat:receive", {
-          sender: "Mora",
+          sender: "Shizuki",
           message: finalAiReply,
           timestamp: savedAiMessage.timestamp
         });

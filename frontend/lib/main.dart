@@ -4,7 +4,7 @@ import 'core/router/app_router.dart';
 import 'core/services/notification_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:frontend/l10n/app_localizations.dart';
 import 'core/providers/language_provider.dart';
 
 void main() async {

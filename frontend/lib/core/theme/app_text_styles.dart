@@ -6,7 +6,7 @@ class AppTextStyles {
   AppTextStyles._();
 
   // ── Display (Orbitron) ────────────────────────────────────────────────────
-  static TextStyle displayLarge = TextStyle(
+  static const TextStyle displayLarge = TextStyle(
     fontFamily: 'Orbitron',
     fontWeight: FontWeight.w700,
     fontSize: 42,
@@ -14,7 +14,7 @@ class AppTextStyles {
     color: AppColors.primary,
   );
 
-  static TextStyle displayMedium = TextStyle(
+  static const TextStyle displayMedium = TextStyle(
     fontFamily: 'Orbitron',
     fontWeight: FontWeight.w700,
     fontSize: 28,
@@ -22,7 +22,7 @@ class AppTextStyles {
     color: AppColors.primary,
   );
 
-  static TextStyle titleLarge = TextStyle(
+  static const TextStyle titleLarge = TextStyle(
     fontFamily: 'Orbitron',
     fontWeight: FontWeight.w700,
     fontSize: 18,
@@ -30,7 +30,7 @@ class AppTextStyles {
     color: AppColors.textPrimary,
   );
 
-  static TextStyle titleMedium = TextStyle(
+  static const TextStyle titleMedium = TextStyle(
     fontFamily: 'Orbitron',
     fontWeight: FontWeight.w700,
     fontSize: 14,
@@ -39,7 +39,7 @@ class AppTextStyles {
   );
 
   // ── Body (Rajdhani) ───────────────────────────────────────────────────────
-  static TextStyle bodyLarge = TextStyle(
+  static const TextStyle bodyLarge = TextStyle(
     fontFamily: 'Rajdhani',
     fontWeight: FontWeight.w600,
     fontSize: 16,
@@ -47,7 +47,7 @@ class AppTextStyles {
     color: AppColors.textPrimary,
   );
 
-  static TextStyle bodyMedium = TextStyle(
+  static const TextStyle bodyMedium = TextStyle(
     fontFamily: 'Rajdhani',
     fontWeight: FontWeight.w600,
     fontSize: 14,
@@ -55,7 +55,7 @@ class AppTextStyles {
     color: AppColors.textPrimary,
   );
 
-  static TextStyle bodySmall = TextStyle(
+  static const TextStyle bodySmall = TextStyle(
     fontFamily: 'Rajdhani',
     fontWeight: FontWeight.w400,
     fontSize: 12,
@@ -63,7 +63,7 @@ class AppTextStyles {
     color: AppColors.textSecondary,
   );
 
-  static TextStyle subtitle = TextStyle(
+  static const TextStyle subtitle = TextStyle(
     fontFamily: 'Rajdhani',
     fontWeight: FontWeight.w400,
     fontSize: 13,
@@ -71,14 +71,14 @@ class AppTextStyles {
     color: AppColors.textPrimary,
   );
 
-  static TextStyle hint = TextStyle(
+  static const TextStyle hint = TextStyle(
     fontFamily: 'Rajdhani',
     fontWeight: FontWeight.w400,
     fontSize: 14,
     color: AppColors.textSecondary,
   );
 
-  static TextStyle caption = TextStyle(
+  static const TextStyle caption = TextStyle(
     fontFamily: 'Rajdhani',
     fontWeight: FontWeight.w400,
     fontSize: 11,
@@ -86,7 +86,7 @@ class AppTextStyles {
     color: AppColors.textSecondary,
   );
 
-  static TextStyle sectionLabel = TextStyle(
+  static const TextStyle sectionLabel = TextStyle(
     fontFamily: 'Rajdhani',
     fontWeight: FontWeight.w600,
     fontSize: 11,
@@ -94,7 +94,7 @@ class AppTextStyles {
     color: AppColors.textSecondary,
   );
 
-  static TextStyle buttonLabel = TextStyle(
+  static const TextStyle buttonLabel = TextStyle(
     fontFamily: 'Orbitron',
     fontWeight: FontWeight.w700,
     fontSize: 14,

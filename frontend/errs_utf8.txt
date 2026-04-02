@@ -1,0 +1,421 @@
+﻿
+analyze_out.txt:60:  error - 
+Invalid constant value - lib\co
+re\theme\app_theme.dart:24:27 
+- invalid_constant
+analyze_out.txt:62:  error - 
+Target of URI doesn't exist: 'p
+ackage:flutter_gen/gen_l10n/app
+_localizations.dart' - lib\feat
+ures\auth\screens\login_screen.
+dart:1:8 - uri_does_not_exist
+analyze_out.txt:64:  error - 
+Undefined name 
+'AppLocalizations' - lib\featur
+es\auth\screens\login_screen.da
+rt:96:25 - undefined_identifier
+analyze_out.txt:67:  error - 
+Undefined name 
+'AppLocalizations' - lib\featur
+es\auth\screens\login_screen.da
+rt:136:24 - 
+undefined_identifier
+analyze_out.txt:68:  error - 
+Undefined name 
+'AppLocalizations' - lib\featur
+es\auth\screens\login_screen.da
+rt:138:24 - 
+undefined_identifier
+analyze_out.txt:69:  error - 
+Undefined name 
+'AppLocalizations' - lib\featur
+es\auth\screens\login_screen.da
+rt:152:28 - 
+undefined_identifier
+analyze_out.txt:70:  error - 
+Undefined name 
+'AppLocalizations' - lib\featur
+es\auth\screens\login_screen.da
+rt:153:27 - 
+undefined_identifier
+analyze_out.txt:71:  error - 
+Undefined name 
+'AppLocalizations' - lib\featur
+es\auth\screens\login_screen.da
+rt:158:28 - 
+undefined_identifier
+analyze_out.txt:72:  error - 
+Undefined name 
+'AppLocalizations' - lib\featur
+es\auth\screens\login_screen.da
+rt:159:27 - 
+undefined_identifier
+analyze_out.txt:73:  error - 
+Undefined name 
+'AppLocalizations' - lib\featur
+es\auth\screens\login_screen.da
+rt:177:35 - 
+undefined_identifier
+analyze_out.txt:74:  error - 
+Undefined name 
+'AppLocalizations' - lib\featur
+es\auth\screens\login_screen.da
+rt:185:59 - 
+undefined_identifier
+analyze_out.txt:75:  error - 
+Undefined name 
+'AppLocalizations' - lib\featur
+es\auth\screens\login_screen.da
+rt:190:24 - 
+undefined_identifier
+analyze_out.txt:76:  error - 
+Undefined name 
+'AppLocalizations' - lib\featur
+es\auth\screens\login_screen.da
+rt:195:28 - 
+undefined_identifier
+analyze_out.txt:78:  error - 
+Undefined name 
+'AppLocalizations' - lib\featur
+es\auth\screens\login_screen.da
+rt:231:16 - 
+undefined_identifier
+analyze_out.txt:79:  error - 
+Undefined name 
+'AppLocalizations' - lib\featur
+es\auth\screens\login_screen.da
+rt:232:16 - 
+undefined_identifier
+analyze_out.txt:80:  error - 
+Target of URI doesn't exist: 'p
+ackage:flutter_gen/gen_l10n/app
+_localizations.dart' - lib\feat
+ures\auth\screens\signup_screen
+.dart:1:8 - uri_does_not_exist
+analyze_out.txt:82:  error - 
+Undefined name 
+'AppLocalizations' - lib\featur
+es\auth\screens\signup_screen.d
+art:109:25 - 
+undefined_identifier
+analyze_out.txt:85:  error - 
+Undefined name 
+'AppLocalizations' - lib\featur
+es\auth\screens\signup_screen.d
+art:149:24 - 
+undefined_identifier
+analyze_out.txt:86:  error - 
+Undefined name 
+'AppLocalizations' - lib\featur
+es\auth\screens\signup_screen.d
+art:154:24 - 
+undefined_identifier
+analyze_out.txt:87:  error - 
+Undefined name 
+'AppLocalizations' - lib\featur
+es\auth\screens\signup_screen.d
+art:165:28 - 
+undefined_identifier
+analyze_out.txt:88:  error - 
+Undefined name 
+'AppLocalizations' - lib\featur
+es\auth\screens\signup_screen.d
+art:166:27 - 
+undefined_identifier
+analyze_out.txt:89:  error - 
+Undefined name 
+'AppLocalizations' - lib\featur
+es\auth\screens\signup_screen.d
+art:171:28 - 
+undefined_identifier
+analyze_out.txt:90:  error - 
+Undefined name 
+'AppLocalizations' - lib\featur
+es\auth\screens\signup_screen.d
+art:172:27 - 
+undefined_identifier
+analyze_out.txt:91:  error - 
+Undefined name 
+'AppLocalizations' - lib\featur
+es\auth\screens\signup_screen.d
+art:188:57 - 
+undefined_identifier
+analyze_out.txt:92:  error - 
+Undefined name 
+'AppLocalizations' - lib\featur
+es\auth\screens\signup_screen.d
+art:193:24 - 
+undefined_identifier
+analyze_out.txt:93:  error - 
+Undefined name 
+'AppLocalizations' - lib\featur
+es\auth\screens\signup_screen.d
+art:197:28 - 
+undefined_identifier
+analyze_out.txt:108:  error - 
+Target of URI doesn't exist: 'p
+ackage:flutter_gen/gen_l10n/app
+_localizations.dart' - lib\feat
+ures\chat\screens\chat_screen.d
+art:3:8 - uri_does_not_exist
+analyze_out.txt:110:  error - 
+Undefined name 
+'AppLocalizations' - lib\featur
+es\chat\screens\chat_screen.dar
+t:190:16 - undefined_identifier
+analyze_out.txt:111:  error - 
+Undefined name 
+'AppLocalizations' - lib\featur
+es\chat\screens\chat_screen.dar
+t:202:29 - undefined_identifier
+analyze_out.txt:112:  error - 
+Undefined name 
+'AppLocalizations' - lib\featur
+es\chat\screens\chat_screen.dar
+t:210:37 - undefined_identifier
+analyze_out.txt:119:  error - 
+Undefined name 
+'AppLocalizations' - lib\featur
+es\chat\screens\chat_screen.dar
+t:335:31 - undefined_identifier
+analyze_out.txt:120:  error - 
+Undefined name 
+'AppLocalizations' - lib\featur
+es\chat\screens\chat_screen.dar
+t:335:73 - undefined_identifier
+analyze_out.txt:126:  error - 
+Undefined name 
+'AppLocalizations' - lib\featur
+es\chat\screens\chat_screen.dar
+t:407:27 - undefined_identifier
+analyze_out.txt:128:  error - 
+Target of URI doesn't exist: 'p
+ackage:flutter_gen/gen_l10n/app
+_localizations.dart' - lib\feat
+ures\config\screens\config_scre
+en.dart:3:8 - 
+uri_does_not_exist
+analyze_out.txt:130:  error - 
+Undefined name 
+'AppLocalizations' - lib\featur
+es\config\screens\config_screen
+.dart:98:34 - 
+undefined_identifier
+analyze_out.txt:132:  error - 
+Undefined name 'currentLocale' 
+- lib\features\config\screens\c
+onfig_screen.dart:125:36 - 
+undefined_identifier
+analyze_out.txt:134:  error - 
+Undefined name 'loc' - lib\feat
+ures\config\screens\config_scre
+en.dart:142:31 - 
+undefined_identifier
+analyze_out.txt:135:  error - 
+Undefined name 'loc' - lib\feat
+ures\config\screens\config_scre
+en.dart:145:26 - 
+undefined_identifier
+analyze_out.txt:136:  error - 
+Undefined name 'loc' - lib\feat
+ures\config\screens\config_scre
+en.dart:157:26 - 
+undefined_identifier
+analyze_out.txt:137:  error - 
+Undefined name 'loc' - lib\feat
+ures\config\screens\config_scre
+en.dart:164:41 - 
+undefined_identifier
+analyze_out.txt:138:  error - 
+Undefined name 'loc' - lib\feat
+ures\config\screens\config_scre
+en.dart:171:31 - 
+undefined_identifier
+analyze_out.txt:140:  error - 
+Undefined name 'loc' - lib\feat
+ures\config\screens\config_scre
+en.dart:188:28 - 
+undefined_identifier
+analyze_out.txt:141:  error - 
+Undefined name 'loc' - lib\feat
+ures\config\screens\config_scre
+en.dart:211:31 - 
+undefined_identifier
+analyze_out.txt:142:  error - 
+Undefined name '_toggles' - lib
+\features\config\screens\config
+_screen.dart:213:20 - 
+undefined_identifier
+analyze_out.txt:143:  error - 
+Undefined name 'loc' - lib\feat
+ures\config\screens\config_scre
+en.dart:227:31 - 
+undefined_identifier
+analyze_out.txt:144:  error - 
+Undefined name 'loc' - lib\feat
+ures\config\screens\config_scre
+en.dart:235:26 - 
+undefined_identifier
+analyze_out.txt:149:  error - 
+Target of URI doesn't exist: 'p
+ackage:flutter_gen/gen_l10n/app
+_localizations.dart' - lib\feat
+ures\home\screens\home_screen.d
+art:1:8 - uri_does_not_exist
+analyze_out.txt:150:  error - 
+Undefined name 
+'AppLocalizations' - lib\featur
+es\home\screens\home_screen.dar
+t:98:32 - undefined_identifier
+analyze_out.txt:151:  error - 
+Undefined name 
+'AppLocalizations' - lib\featur
+es\home\screens\home_screen.dar
+t:124:60 - undefined_identifier
+analyze_out.txt:154:  error - 
+Undefined name 
+'AppLocalizations' - lib\featur
+es\home\screens\home_screen.dar
+t:162:25 - undefined_identifier
+analyze_out.txt:160:  error - 
+Undefined name 
+'AppLocalizations' - lib\featur
+es\home\screens\home_screen.dar
+t:185:21 - undefined_identifier
+analyze_out.txt:161:  error - 
+Undefined name 
+'AppLocalizations' - lib\featur
+es\home\screens\home_screen.dar
+t:198:32 - undefined_identifier
+analyze_out.txt:162:  error - 
+Undefined name 
+'AppLocalizations' - lib\featur
+es\home\screens\home_screen.dar
+t:203:32 - undefined_identifier
+analyze_out.txt:163:  error - 
+Undefined name 
+'AppLocalizations' - lib\featur
+es\home\screens\home_screen.dar
+t:208:32 - undefined_identifier
+analyze_out.txt:164:  error - 
+Target of URI doesn't exist: 'p
+ackage:flutter_gen/gen_l10n/app
+_localizations.dart' - lib\feat
+ures\reminders\models\task.dart
+:1:8 - uri_does_not_exist
+analyze_out.txt:165:  error - 
+Undefined name 
+'AppLocalizations' - lib\featur
+es\reminders\models\task.dart:4
+3:17 - undefined_identifier
+analyze_out.txt:166:  error - 
+Undefined name 'context' - lib\
+features\reminders\models\task.
+dart:43:37 - 
+undefined_identifier
+analyze_out.txt:167:  error - 
+Target of URI doesn't exist: 'p
+ackage:flutter_gen/gen_l10n/app
+_localizations.dart' - lib\feat
+ures\reminders\screens\reminder
+s_screen.dart:1:8 - 
+uri_does_not_exist
+analyze_out.txt:168:  error - 
+Invalid constant value - lib\fe
+atures\reminders\screens\remind
+ers_screen.dart:133:34 - 
+invalid_constant
+analyze_out.txt:171:  error - 
+Undefined name 
+'AppLocalizations' - lib\featur
+es\reminders\screens\reminders_
+screen.dart:230:17 - 
+undefined_identifier
+analyze_out.txt:172:  error - 
+Undefined name 
+'AppLocalizations' - lib\featur
+es\reminders\screens\reminders_
+screen.dart:253:20 - 
+undefined_identifier
+analyze_out.txt:173:  error - 
+Undefined name 
+'AppLocalizations' - lib\featur
+es\reminders\screens\reminders_
+screen.dart:312:41 - 
+undefined_identifier
+analyze_out.txt:176:  error - 
+Target of URI doesn't exist: 'p
+ackage:flutter_gen/gen_l10n/app
+_localizations.dart' - lib\feat
+ures\splash\screens\start_scree
+n.dart:1:8 - uri_does_not_exist
+analyze_out.txt:177:  error - 
+Invalid constant value - lib\fe
+atures\splash\screens\start_scr
+een.dart:31:28 - 
+invalid_constant
+analyze_out.txt:178:  error - 
+Undefined name 
+'AppLocalizations' - lib\featur
+es\splash\screens\start_screen.
+dart:31:28 - 
+undefined_identifier
+analyze_out.txt:179:  error - 
+Undefined name 
+'AppLocalizations' - lib\featur
+es\splash\screens\start_screen.
+dart:40:21 - 
+undefined_identifier
+analyze_out.txt:181:  error - 
+Undefined name 
+'AppLocalizations' - lib\featur
+es\splash\screens\start_screen.
+dart:54:24 - 
+undefined_identifier
+analyze_out.txt:183:  error - 
+Undefined name 
+'AppLocalizations' - lib\featur
+es\splash\screens\start_screen.
+dart:89:24 - 
+undefined_identifier
+analyze_out.txt:184:  error - 
+Undefined name 
+'AppLocalizations' - lib\featur
+es\splash\screens\start_screen.
+dart:95:28 - 
+undefined_identifier
+analyze_out.txt:185:  error - 
+Undefined name 
+'AppLocalizations' - lib\featur
+es\splash\screens\start_screen.
+dart:102:24 - 
+undefined_identifier
+analyze_out.txt:186:  error - 
+Target of URI doesn't exist: 'p
+ackage:flutter_gen/gen_l10n/app
+_localizations.dart' - 
+lib\main.dart:7:8 - 
+uri_does_not_exist
+analyze_out.txt:187:  error - 
+The values in a const list 
+literal must be constants - 
+lib\main.dart:31:9 - 
+non_constant_list_element
+analyze_out.txt:188:  error - 
+Undefined name 
+'AppLocalizations' - 
+lib\main.dart:31:9 - 
+undefined_identifier
+analyze_out.txt:193:  error - 
+Target of URI doesn't exist: 'p
+ackage:flutter_gen/gen_l10n/app
+_localizations.dart' - lib\shar
+ed\widgets\mecha_app_bar.dart:1
+:8 - uri_does_not_exist
+analyze_out.txt:195:  error - 
+Undefined name 
+'AppLocalizations' - lib\shared
+\widgets\mecha_app_bar.dart:35:
+17 - undefined_identifier
+
+

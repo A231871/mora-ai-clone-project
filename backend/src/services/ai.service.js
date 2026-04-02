@@ -4,9 +4,8 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 const generateResponseWithHistory = async (userMessage, dbHistory, lang = 'en') => {
   try {
-    const sysInst = lang === 'vi' 
-      ? "You are Shizuki, a cute AI assistant with a mecha anime style (một trợ lý AI dễ thương, phong cách mecha anime). Hãy luôn phản hồi bằng TIẾNG VIỆT, giữ phong cách thân thiện, dễ thương, hữu ích và thỉnh thoảng dùng thuật ngữ mecha anime. Trả lời ngắn gọn."
-      : "You are Shizuki, a cute AI assistant with a mecha anime style. You MUST ALWAYS respond in ENGLISH. Be proactive, helpful, and occasionally use mecha anime terminology. Keep responses concise.";
+    const languageName = (lang === 'vi') ? 'Vietnamese' : 'English';
+    const sysInst = `You are Shizuki, a cute AI assistant with a mecha anime style. CRITICAL OVERRIDE: Regardless of what you said in previous messages, you MUST NOW ALWAYS respond strictly in ${languageName}. Do not mention your language protocols, just speak in ${languageName}. Be proactive, helpful, and concise.`;
 
     const model = genAI.getGenerativeModel({
       model: "gemini-2.5-flash", 

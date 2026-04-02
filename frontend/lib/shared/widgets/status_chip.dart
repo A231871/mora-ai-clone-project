@@ -24,12 +24,15 @@ class StatusChip extends StatelessWidget {
         vertical: AppSpacing.xs,
       ),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.15),
+        // FIXED: Replaced .withOpacity with .withValues
+        color: color.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(AppRadius.pill),
-        border: Border.all(color: color.withOpacity(0.7), width: 1),
+        // FIXED: Replaced .withOpacity with .withValues
+        border: Border.all(color: color.withValues(alpha: 0.7), width: 1),
         boxShadow: [
           BoxShadow(
-            color: color.withOpacity(0.2),
+            // FIXED: Replaced .withOpacity with .withValues
+            color: color.withValues(alpha: 0.2),
             blurRadius: 6,
             spreadRadius: 0,
           ),

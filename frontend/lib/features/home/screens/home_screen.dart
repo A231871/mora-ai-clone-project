@@ -1,4 +1,4 @@
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:frontend/l10n/app_localizations.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
@@ -6,7 +6,6 @@ import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
-import '../../../core/constants/app_strings.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../shared/widgets/grid_background.dart';
 import '../../../shared/widgets/glassmorphism_button.dart';
@@ -78,12 +77,12 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       backgroundColor: AppColors.bgDeep,
       body: Stack(
-        children: [
+        children:[
           const GridBackground(),
           SafeArea(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+              children:[
                 // ── Top bar ─────────────────────────────────────────────
                 Padding(
                   padding: const EdgeInsets.symmetric(
@@ -91,10 +90,10 @@ class _HomeScreenState extends State<HomeScreen> {
                     vertical: AppSpacing.sm,
                   ),
                   child: Row(
-                    children: [
+                    children:[
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
+                        children:[
                           Text(AppLocalizations.of(context)!.goodMorning,
                               style: AppTextStyles.caption),
                           Text('COMMANDER $_username',
@@ -119,7 +118,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
                   child: Wrap(
                     spacing: AppSpacing.sm,
-                    children: [
+                    children:[
                       StatusChip(
                         label: _username != 'SYNCING...' ? AppLocalizations.of(context)!.shizukiOnline : 'CONNECTING...',
                         color: _username != 'SYNCING...' ? AppColors.statusGreen : AppColors.accent,
@@ -148,12 +147,12 @@ class _HomeScreenState extends State<HomeScreen> {
                           bottomRight: Radius.circular(AppSpacing.xs),
                         ),
                         border: Border.all(
-                          color: AppColors.primary.withOpacity(0.4),
+                          color: AppColors.primary.withValues(alpha: 0.4),
                           width: 1,
                         ),
-                        boxShadow: [
+                        boxShadow:[
                           BoxShadow(
-                            color: AppColors.primary.withOpacity(0.15),
+                            color: AppColors.primary.withValues(alpha: 0.15),
                             blurRadius: 12,
                           ),
                         ],
@@ -167,7 +166,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
 
                 // ── Avatar (Shizuki) ─────────────────────────────────────
-                Expanded(
+                const Expanded(
                   child: Center(
                     child: RepaintBoundary(
                       key: ValueKey('avatar-slot'),
@@ -192,7 +191,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
+                    children:[
                       GlassmorphismButton(
                         icon: Icons.chat_bubble_outline,
                         label: AppLocalizations.of(context)!.chat,

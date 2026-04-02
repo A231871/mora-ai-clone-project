@@ -1,14 +1,13 @@
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:frontend/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_spacing.dart';
 import '../../core/theme/app_text_styles.dart';
-import '../../core/constants/app_strings.dart';
 
 /// Reusable transparent app bar for Chat / Reminders / Config screens.
 class MechaAppBar extends StatelessWidget implements PreferredSizeWidget {
-  MechaAppBar({
+  const MechaAppBar({
     super.key,
     required this.title,
     this.trailing,
@@ -41,7 +40,7 @@ class MechaAppBar extends StatelessWidget implements PreferredSizeWidget {
           : null,
       title: Text(title, style: AppTextStyles.titleMedium),
       centerTitle: true,
-      actions: [
+      actions:[
         if (trailing != null)
           Padding(
             padding: const EdgeInsets.only(right: AppSpacing.md),

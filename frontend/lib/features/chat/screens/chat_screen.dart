@@ -1,18 +1,17 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/providers/language_provider.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:frontend/l10n/app_localizations.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
-import '../../../core/constants/app_strings.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/services/chat_service.dart';
 import '../../../core/services/voice_service.dart';
 import '../../../shared/widgets/grid_background.dart';
 import '../../../shared/widgets/mecha_app_bar.dart';
+import '../../../core/providers/language_provider.dart';
 
 enum MoraState { idle, thinking, talking }
 
@@ -29,7 +28,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
   final ChatService _chatService = ChatService();
   final VoiceService _voiceService = VoiceService();
-  final List<Map<String, dynamic>> _messages = [];
+  final List<Map<String, dynamic>> _messages =[];
 
   MoraState _moraState = MoraState.idle;
   Timer? _talkingTimer;
@@ -46,8 +45,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     
     _voiceService.init();
     _chatService.connect();
-    _chatService.fetchHistory();
-
+    
+    // LOGIC FIX: Always setup listeners BEFORE fetching data. 
+    // Otherwise, if the data is fetched instantly, you will miss the event!
     _historySub = _chatService.historyStream.listen((historyList) {
       if (mounted) {
         setState(() {
@@ -68,10 +68,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       if (mounted) {
         setState(() {
           _messages.add(messageData); 
-          if (messageData['sender'] == 'Mora') {
+          if (messageData['sender'] == 'Shizuki') {
             _moraState = MoraState.talking;
             _startTalkingTimer();
-            _voiceService.speak(messageData['message']);
+            final langCode = ref.read(languageProvider).languageCode;
+            _voiceService.speak(messageData['message'], languageCode: langCode);
           }
         });
         _scrollToBottom();
@@ -97,14 +98,18 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text("[ SYSTEM OVERRIDE ]\n$alertMessage", style: TextStyle(color: Colors.white, fontFamily: 'monospace')),
+            content: Text("[ SYSTEM OVERRIDE ]\n$alertMessage", style: const TextStyle(color: Colors.white, fontFamily: 'monospace')),
             backgroundColor: Colors.redAccent,
             duration: const Duration(seconds: 10),
           ),
         );
-        _voiceService.speak(alertMessage);
+        final langCode = ref.read(languageProvider).languageCode;
+        _voiceService.speak(alertMessage, languageCode: langCode);
       }
     });
+
+    // Now that listeners are ready, fetch the history.
+    _chatService.fetchHistory();
   }
 
   void _scrollToBottom() {
@@ -134,9 +139,45 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final text = _controller.text.trim();
     if (text.isEmpty) return;
     
-    _chatService.sendMessage(text);
+    final langCode = ref.read(languageProvider).languageCode;
+    _chatService.sendMessage(text, lang: langCode);
     _controller.clear();
     _voiceService.stop();
+  }
+
+  void _clearHistory() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.bgDeep,
+        shape: RoundedRectangleBorder(
+            side: const BorderSide(color: Colors.redAccent, width: 2),
+            borderRadius: BorderRadius.circular(AppSpacing.md)),
+        title: const Text('CLEAR MEMORY CORE?',
+            style: TextStyle(fontFamily: 'Orbitron', color: Colors.redAccent)),
+        content: const Text(
+          'Are you sure you want to permanently delete all chat history? This action cannot be undone.',
+          style: AppTextStyles.bodyMedium,
+        ),
+        actions:[
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('CANCEL', style: AppTextStyles.buttonLabel.copyWith(color: AppColors.textSecondary)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+            onPressed: () {
+              Navigator.pop(ctx);
+              _chatService.clearChatHistory();
+              setState(() {
+                _messages.clear();
+              });
+            },
+            child: const Text('DELETE', style: AppTextStyles.buttonLabel),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _toggleListening() async {
@@ -165,7 +206,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             _controller.text = recognizedText;
           });
         }
-      });
+      }, languageCode: ref.read(languageProvider).languageCode);
     }
   }
 
@@ -188,14 +229,16 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       backgroundColor: AppColors.bgDeep,
       appBar: MechaAppBar(
         title: AppLocalizations.of(context)!.chatMode,
-        trailing: const Icon(Icons.local_florist_outlined,
-            color: AppColors.primary, size: 20),
+        trailing: IconButton(
+          icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+          onPressed: _clearHistory,
+        ),
       ),
       body: Stack(
-        children: [
+        children:[
           const GridBackground(),
           Column(
-            children: [
+            children:[
               // ── TODAY label ───────────────────────────────────────────
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
@@ -269,7 +312,7 @@ class _MessageBubble extends StatelessWidget {
               height: 32,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppColors.primary.withOpacity(0.2),
+                color: AppColors.primary.withValues(alpha: 0.2),
                 border: Border.all(color: AppColors.primary, width: 1),
               ),
               child: const Icon(Icons.local_florist,
@@ -282,12 +325,12 @@ class _MessageBubble extends StatelessWidget {
             child: Column(
               crossAxisAlignment:
                   isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-              children: [
+              children:[
                 Container(
                   padding: const EdgeInsets.all(AppSpacing.md),
                   decoration: BoxDecoration(
                     color: isUser
-                        ? Colors.white.withOpacity(0.1)
+                        ? Colors.white.withValues(alpha: 0.1)
                         : AppColors.bgCard,
                     borderRadius: BorderRadius.only(
                       topLeft: const Radius.circular(AppSpacing.lg),
@@ -300,14 +343,14 @@ class _MessageBubble extends StatelessWidget {
                     border: isUser
                         ? null
                         : Border.all(
-                            color: AppColors.primary.withOpacity(0.35),
+                            color: AppColors.primary.withValues(alpha: 0.35),
                             width: 1,
                           ),
                     boxShadow: isUser
                         ? null
-                        : [
+                        :[
                             BoxShadow(
-                              color: AppColors.primary.withOpacity(0.1),
+                              color: AppColors.primary.withValues(alpha: 0.1),
                               blurRadius: 8,
                             ),
                           ],
@@ -318,14 +361,14 @@ class _MessageBubble extends StatelessWidget {
                       p: AppTextStyles.bodyMedium.copyWith(color: isUser ? Colors.white : AppColors.textPrimary),
                       strong: AppTextStyles.bodyMedium.copyWith(color: isUser ? Colors.white : AppColors.primary, fontWeight: FontWeight.bold),
                       em: AppTextStyles.bodyMedium.copyWith(fontStyle: FontStyle.italic),
-                      code: TextStyle(
+                      code: const TextStyle(
                          color: AppColors.primary,
                          backgroundColor: Colors.black54,
                          fontFamily: 'monospace',
                       ),
                       codeblockDecoration: BoxDecoration(
                          color: Colors.black87,
-                         border: Border.all(color: AppColors.primary.withOpacity(0.5)),
+                         border: Border.all(color: AppColors.primary.withValues(alpha: 0.5)),
                       ),
                     ),
                   ),
@@ -347,9 +390,9 @@ class _MessageBubble extends StatelessWidget {
               height: 32,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.white.withOpacity(0.1),
+                color: Colors.white.withValues(alpha: 0.1),
                 border: Border.all(
-                    color: AppColors.textSecondary.withOpacity(0.4)),
+                    color: AppColors.textSecondary.withValues(alpha: 0.4)),
               ),
               child: const Icon(Icons.wb_sunny_outlined,
                   size: 16, color: AppColors.textSecondary),
@@ -377,22 +420,22 @@ class _InputBar extends StatelessWidget {
         color: AppColors.bgDeep,
         border: Border(
           top: BorderSide(
-            color: AppColors.primary.withOpacity(0.2),
+            color: AppColors.primary.withValues(alpha: 0.2),
             width: 1,
           ),
         ),
       ),
       child: Row(
-        children: [
+        children:[
           GestureDetector(
             onTap: onToggleListen,
             child: Container(
               width: 44,
               height: 44,
               decoration: BoxDecoration(
-                color: isListening ? Colors.redAccent.withOpacity(0.2) : AppColors.bgCard,
+                color: isListening ? Colors.redAccent.withValues(alpha: 0.2) : AppColors.bgCard,
                 shape: BoxShape.circle,
-                border: Border.all(color: isListening ? Colors.redAccent : AppColors.primary.withOpacity(0.5)),
+                border: Border.all(color: isListening ? Colors.redAccent : AppColors.primary.withValues(alpha: 0.5)),
               ),
               child: Icon(isListening ? Icons.mic : Icons.mic_none,
                   color: isListening ? Colors.redAccent : AppColors.primary, size: 20),
@@ -437,12 +480,12 @@ class _InputBar extends StatelessWidget {
               height: 44,
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
-                  colors: [AppColors.primary, AppColors.accent],
+                  colors:[AppColors.primary, AppColors.accent],
                 ),
                 shape: BoxShape.circle,
-                boxShadow: [
+                boxShadow:[
                   BoxShadow(
-                    color: AppColors.primary.withOpacity(0.5),
+                    color: AppColors.primary.withValues(alpha: 0.5),
                     blurRadius: 12,
                     spreadRadius: 1,
                   ),

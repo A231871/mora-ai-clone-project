@@ -1,9 +1,8 @@
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:frontend/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
-import '../../../core/constants/app_strings.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../shared/widgets/grid_background.dart';
 import '../../../shared/widgets/mecha_button.dart';
@@ -17,17 +16,17 @@ class StartScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.bgDeep,
       body: Stack(
-        children: [
+        children:[
           const GridBackground(),
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
               child: Column(
-                children: [
+                children:[
                   const SizedBox(height: AppSpacing.xl),
 
                   // ── SYSTEM ONLINE chip ────────────────────────────────
-                  const StatusChip(
+                  StatusChip(
                     label: AppLocalizations.of(context)!.systemOnline,
                     color: AppColors.statusGreen,
                     textColor: AppColors.statusGreen,
@@ -39,9 +38,9 @@ class StartScreen extends StatelessWidget {
                   Text(
                     AppLocalizations.of(context)!.moraTitle,
                     style: AppTextStyles.displayLarge.copyWith(
-                      shadows: [
+                      shadows:[
                         Shadow(
-                          color: AppColors.primary.withOpacity(0.8),
+                          color: AppColors.primary.withValues(alpha: 0.8),
                           blurRadius: 20,
                         ),
                       ],
@@ -63,9 +62,9 @@ class StartScreen extends StatelessWidget {
                       height: 280,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        boxShadow: [
+                        boxShadow:[
                           BoxShadow(
-                            color: AppColors.primary.withOpacity(0.35),
+                            color: AppColors.primary.withValues(alpha: 0.35),
                             blurRadius: 60,
                             spreadRadius: 10,
                           ),

@@ -213,8 +213,9 @@ class _ShizukiAnimatorState extends State<ShizukiAnimator>
       key: ValueKey('shizuki-${emotion.name}'),
       fit: BoxFit.contain,
       errorBuilder: (_, __, ___) => Center(
+        // FIXED: Added missing const to TextStyle
         child: Text(emotion.fallbackEmoji,
-            style: TextStyle(fontSize: 80)),
+            style: const TextStyle(fontSize: 80)),
       ),
     );
   }

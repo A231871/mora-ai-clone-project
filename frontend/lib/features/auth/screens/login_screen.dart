@@ -1,9 +1,8 @@
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:frontend/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
-import '../../../core/constants/app_strings.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../shared/widgets/grid_background.dart';
 import '../../../shared/widgets/mecha_button.dart';
@@ -68,7 +67,7 @@ class _LoginScreenState extends State<LoginScreen> {
       context.go('/home');
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(result['message'] ?? 'Login failed', style: TextStyle(color: Colors.redAccent))),
+        SnackBar(content: Text(result['message'] ?? 'Login failed', style: const TextStyle(color: Colors.redAccent))),
       );
     }
   }
@@ -78,13 +77,13 @@ class _LoginScreenState extends State<LoginScreen> {
     return Scaffold(
       backgroundColor: AppColors.bgDeep,
       body: Stack(
-        children: [
+        children:[
           const GridBackground(),
           SafeArea(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
               child: Column(
-                children: [
+                children:[
                   const SizedBox(height: AppSpacing.md),
 
                   // ── BACK button ───────────────────────────────────────
@@ -107,16 +106,16 @@ class _LoginScreenState extends State<LoginScreen> {
                     key: const ValueKey('avatar-slot'),
                     child: Stack(
                       alignment: Alignment.center,
-                      children: [
+                      children:[
                         Container(
                           width: 160,
                           height: 160,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             gradient: RadialGradient(
-                              colors: [
-                                AppColors.primary.withOpacity(0.35),
-                                AppColors.primary.withOpacity(0.0),
+                              colors:[
+                                AppColors.primary.withValues(alpha: 0.35),
+                                AppColors.primary.withValues(alpha: 0.0),
                               ],
                             ),
                           ),
@@ -222,12 +221,12 @@ class _AuthTabs extends StatelessWidget {
         color: AppColors.bgCard,
         borderRadius: BorderRadius.circular(AppRadius.pill),
         border: Border.all(
-          color: AppColors.primary.withOpacity(0.3),
+          color: AppColors.primary.withValues(alpha: 0.3),
           width: 1,
         ),
       ),
       child: Row(
-        children: [
+        children:[
           _tab(AppLocalizations.of(context)!.logIn, isActive: activeTab == 0, onTap: () {}),
           _tab(AppLocalizations.of(context)!.signUp, isActive: activeTab == 1, onTap: onSignUpTap),
         ],
@@ -244,7 +243,7 @@ class _AuthTabs extends StatelessWidget {
           decoration: BoxDecoration(
             gradient: isActive
                 ? const LinearGradient(
-                    colors: [AppColors.primary, AppColors.accent],
+                    colors:[AppColors.primary, AppColors.accent],
                   )
                 : null,
             borderRadius: BorderRadius.circular(AppRadius.pill),

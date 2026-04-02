@@ -4,13 +4,15 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 const String _languagePrefsKey = 'language_code';
 
-final languageProvider = StateNotifierProvider<LanguageNotifier, Locale>((ref) {
+final languageProvider = NotifierProvider<LanguageNotifier, Locale>(() {
   return LanguageNotifier();
 });
 
-class LanguageNotifier extends StateNotifier<Locale> {
-  LanguageNotifier() : super(const Locale('en')) {
+class LanguageNotifier extends Notifier<Locale> {
+  @override
+  Locale build() {
     _loadLanguage();
+    return const Locale('en');
   }
 
   Future<void> _loadLanguage() async {

@@ -1,9 +1,8 @@
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:frontend/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
-import '../../../core/constants/app_strings.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../shared/widgets/grid_background.dart';
 import '../../../shared/widgets/mecha_app_bar.dart';
@@ -65,25 +64,25 @@ class _RemindersScreenState extends State<RemindersScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: AppColors.bgCard,
-        shape: RoundedRectangleBorder(
-          side: const BorderSide(color: Colors.redAccent, width: 2),
-          borderRadius: BorderRadius.circular(16),
+        shape: const RoundedRectangleBorder(
+          side: BorderSide(color: Colors.redAccent, width: 2),
+          borderRadius: BorderRadius.all(Radius.circular(16)),
         ),
         title: Row(
-          children: [
+          children:[
             const Icon(Icons.warning_amber_rounded, color: Colors.redAccent),
             const SizedBox(width: AppSpacing.sm),
             Text('SYSTEM PURGE', style: AppTextStyles.titleMedium.copyWith(color: Colors.redAccent)),
           ],
         ),
-        content: Text(
+        content: const Text(
           'Are you sure you want to delete all reminders?\n\nThis action cannot be undone.',
           style: AppTextStyles.bodyMedium,
         ),
-        actions: [
+        actions:[
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: Text('CANCEL', style: AppTextStyles.caption),
+            child: const Text('CANCEL', style: AppTextStyles.caption),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
@@ -102,7 +101,7 @@ class _RemindersScreenState extends State<RemindersScreen> {
     }
   }
 
-Future<void> _showAddEditReminderDialog(BuildContext context, {Task? existingTask}) async {
+  Future<void> _showAddEditReminderDialog(BuildContext context, {Task? existingTask}) async {
     final titleCtrl = TextEditingController(text: existingTask?.title ?? '');
     TimeOfDay? selectedTime;
     if (existingTask != null && existingTask.isoTime.isNotEmpty) {
@@ -111,7 +110,7 @@ Future<void> _showAddEditReminderDialog(BuildContext context, {Task? existingTas
     }
     
     List<String> selectedDays = List.from(existingTask?.daysOfWeek ??[]);
-    final daysOfWeek = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    final daysOfWeek =['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
     await showDialog(
       context: context,
@@ -162,11 +161,11 @@ Future<void> _showAddEditReminderDialog(BuildContext context, {Task? existingTas
                           color: isSelected ? AppColors.textPrimary : AppColors.textSecondary
                         )),
                         selected: isSelected,
-                        selectedColor: AppColors.primary.withOpacity(0.4),
+                        selectedColor: AppColors.primary.withValues(alpha: 0.4),
                         backgroundColor: Colors.transparent,
                         shape: StadiumBorder(
                           side: BorderSide(
-                            color: isSelected ? AppColors.primary : AppColors.textSecondary.withOpacity(0.5)
+                            color: isSelected ? AppColors.primary : AppColors.textSecondary.withValues(alpha: 0.5)
                           )
                         ),
                         onSelected: (bool selected) {
@@ -187,7 +186,7 @@ Future<void> _showAddEditReminderDialog(BuildContext context, {Task? existingTas
             actions:[
               TextButton(
                 onPressed: () => Navigator.pop(ctx),
-                child: Text('CANCEL', style: AppTextStyles.caption),
+                child: const Text('CANCEL', style: AppTextStyles.caption),
               ),
               TextButton(
                 onPressed: () {
@@ -225,14 +224,14 @@ Future<void> _showAddEditReminderDialog(BuildContext context, {Task? existingTas
       ),
     );
   }
+  
   Color _chipColor(String category) {
-    switch (category) {
-      case AppLocalizations.of(context).categoryWork:   return AppColors.chipWork;
-      case AppLocalizations.of(context).categoryHealth: return AppColors.chipHealth;
-      case AppLocalizations.of(context).categoryShizuki: return AppColors.chipMora;
-      case AppLocalizations.of(context).categorySocial: return AppColors.chipSocial;
-      default: return AppColors.primary;
-    }
+    final cat = category.toUpperCase();
+    if (cat == 'WORK') return AppColors.chipWork;
+    if (cat == 'HEALTH') return AppColors.chipHealth;
+    if (cat == 'SHIZUKI' || cat == 'MORA') return AppColors.chipMora;
+    if (cat == 'SOCIAL') return AppColors.chipSocial;
+    return AppColors.primary;
   }
 
   @override
@@ -241,7 +240,7 @@ Future<void> _showAddEditReminderDialog(BuildContext context, {Task? existingTas
       stream: ChatService().pendingRemindersStream,
       initialData: ChatService().currentReminders,
       builder: (context, snapshot) {
-        final currentTasks = (snapshot.data ?? [])
+        final currentTasks = (snapshot.data ??[])
             .map((e) => Task.fromJson(Map<String, dynamic>.from(e as Map)))
             .toList();
         final int doneCount = currentTasks.where((t) => t.isDone).length;
@@ -252,7 +251,7 @@ Future<void> _showAddEditReminderDialog(BuildContext context, {Task? existingTas
             title: AppLocalizations.of(context)!.remindersTitle,
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
-              children: [
+              children:[
                 Text(
                   '$doneCount/${currentTasks.length} DONE',
                   style: AppTextStyles.caption
@@ -283,10 +282,10 @@ Future<void> _showAddEditReminderDialog(BuildContext context, {Task? existingTas
             child: const Icon(Icons.add, color: AppColors.textPrimary),
           ),
           body: Stack(
-            children: [
+            children:[
               const GridBackground(),
               Column(
-                children: [
+                children:[
                   // ── Progress bar ─────────────────────────────────────────
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
@@ -370,12 +369,12 @@ class _TaskCard extends StatelessWidget {
         color: AppColors.bgCard,
         borderRadius: BorderRadius.circular(AppSpacing.md),
         border: Border.all(
-          color: AppColors.primary.withOpacity(0.25),
+          color: AppColors.primary.withValues(alpha: 0.25),
           width: 1,
         ),
       ),
       child: Row(
-        children: [
+        children:[
           // ── Circle checkbox ─────────────────────────────────────────
           GestureDetector(
             onTap: onToggle,
@@ -393,9 +392,9 @@ class _TaskCard extends StatelessWidget {
                   width: 2,
                 ),
                 boxShadow: task.isDone
-                    ? [
+                    ?[
                         BoxShadow(
-                          color: AppColors.primary.withOpacity(0.4),
+                          color: AppColors.primary.withValues(alpha: 0.4),
                           blurRadius: 8,
                         )
                       ]
@@ -416,7 +415,7 @@ class _TaskCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
-                  children: [
+                  children:[
                     StatusChip(label: task.category, color: chipColor),
                     if (task.isFeatured) ...[
                       const SizedBox(width: AppSpacing.xs),
@@ -439,7 +438,7 @@ class _TaskCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Row(
-                  children: [
+                  children:[
                     const Icon(Icons.access_time_outlined,
                         size: 12, color: AppColors.textSecondary),
                     const SizedBox(width: 4),
@@ -456,7 +455,7 @@ class _TaskCard extends StatelessWidget {
           // ── Action icons ─────────────────────────────────────────────
           Row(
             mainAxisSize: MainAxisSize.min,
-            children: [
+            children:[
               IconButton(
                 onPressed: onEdit,
                 icon: const Icon(Icons.edit_outlined,

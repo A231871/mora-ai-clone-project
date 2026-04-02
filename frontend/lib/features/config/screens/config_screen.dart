@@ -1,11 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/providers/language_provider.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:frontend/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
-import '../../../core/constants/app_strings.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../shared/widgets/grid_background.dart';
 import '../../../shared/widgets/mecha_app_bar.dart';
@@ -36,6 +35,39 @@ class _ConfigScreenState extends ConsumerState<ConfigScreen> {
     'privacyShield':  true,
   };
 
+  final List<Map<String, dynamic>> _toggles =[
+    {
+      'id': 'darkMode',
+      'title': 'Dark Mode',
+      'sub': 'System-wide dark appearance',
+      'icon': Icons.dark_mode,
+    },
+    {
+      'id': 'notifications',
+      'title': 'Notifications',
+      'sub': 'Allow push notifications',
+      'icon': Icons.notifications,
+    },
+    {
+      'id': 'shizukiVoice',
+      'title': 'Shizuki Voice',
+      'sub': 'Voice assistant responses',
+      'icon': Icons.record_voice_over,
+    },
+    {
+      'id': 'hapticFeedback',
+      'title': 'Haptic Feedback',
+      'sub': 'Vibrate on interactions',
+      'icon': Icons.vibration,
+    },
+    {
+      'id': 'privacyShield',
+      'title': 'Privacy Shield',
+      'sub': 'Limit data tracking',
+      'icon': Icons.security,
+    },
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -43,12 +75,12 @@ class _ConfigScreenState extends ConsumerState<ConfigScreen> {
     _audioService.init();
   }
 
-void _showLogoutDialog(BuildContext context) {
+  void _showLogoutDialog(BuildContext context) {
     showDialog(
       context: context,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
-          backgroundColor: AppColors.bgDeep.withOpacity(0.95),
+          backgroundColor: AppColors.bgDeep.withValues(alpha: 0.95),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppSpacing.md),
             side: const BorderSide(color: Colors.redAccent, width: 2),
@@ -70,7 +102,7 @@ void _showLogoutDialog(BuildContext context) {
               ),
             ],
           ),
-          content: Text(
+          content: const Text(
             'Are you sure you want to disconnect?\nActive session will be terminated.',
             style: AppTextStyles.bodyMedium,
           ),
@@ -91,11 +123,15 @@ void _showLogoutDialog(BuildContext context) {
       },
     );
   }
+
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
+    final currentLocale = ref.watch(languageProvider);
+
     return Scaffold(
       backgroundColor: AppColors.bgDeep,
-      appBar: MechaAppBar(title: AppLocalizations.of(context)!.systemControl),
+      appBar: MechaAppBar(title: loc.systemControl),
       body: Stack(
         children:[
           const GridBackground(),
@@ -105,20 +141,20 @@ void _showLogoutDialog(BuildContext context) {
               crossAxisAlignment: CrossAxisAlignment.start,
               children:[
                 // ── LANGUAGE SELECTION ─────────────────────────────────
-                _SectionLabel('LANGUAGE / NGÔN NGỮ'),
+                const _SectionLabel('LANGUAGE / NGÔN NGỮ'),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
                   decoration: BoxDecoration(
                     color: AppColors.bgCard,
                     borderRadius: BorderRadius.circular(AppSpacing.md),
-                    border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+                    border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text('System Language', style: AppTextStyles.titleMedium),
+                    children:[
+                      const Text('System Language', style: AppTextStyles.titleMedium),
                       SegmentedButton<String>(
-                        segments: const [
+                        segments: const[
                           ButtonSegment(value: 'en', label: Text('EN')),
                           ButtonSegment(value: 'vi', label: Text('VI')),
                         ],
@@ -128,7 +164,7 @@ void _showLogoutDialog(BuildContext context) {
                         },
                         style: SegmentedButton.styleFrom(
                           backgroundColor: AppColors.bgDeep,
-                          selectedBackgroundColor: AppColors.primary.withOpacity(0.2),
+                          selectedBackgroundColor: AppColors.primary.withValues(alpha: 0.2),
                           foregroundColor: AppColors.textPrimary,
                           selectedForegroundColor: AppColors.primary,
                         ),
@@ -161,7 +197,8 @@ void _showLogoutDialog(BuildContext context) {
                     _voiceService.setVolume(v);
                   },
                   onChangeEnd: (v) {
-                    _voiceService.speak(loc.effectVolume); // Or any test string
+                    final langCode = ref.read(languageProvider).languageCode;
+                    _voiceService.speak(loc.effectVolume, languageCode: langCode); // Or any test string
                   },
                 ),
 
@@ -179,7 +216,7 @@ void _showLogoutDialog(BuildContext context) {
                     color: AppColors.bgCard,
                     borderRadius: BorderRadius.circular(AppSpacing.md),
                     border: Border.all(
-                      color: AppColors.primary.withOpacity(0.3),
+                      color: AppColors.primary.withValues(alpha: 0.3),
                     ),
                   ),
                   child: Row(
@@ -192,7 +229,7 @@ void _showLogoutDialog(BuildContext context) {
                         dropdownColor: AppColors.bgCard,
                         underline: const SizedBox(),
                         style: AppTextStyles.bodyMedium,
-                        items: ['Voice A', 'Voice B']
+                        items:['Voice A', 'Voice B']
                             .map((v) => DropdownMenuItem(
                                   value: v,
                                   child: Text(v),
@@ -211,11 +248,11 @@ void _showLogoutDialog(BuildContext context) {
                 _SectionLabel(loc.systemControls),
 
                 ..._toggles.map((t) => _ToggleCard(
-                      key: ValueKey(t['id']),
-                      title: t['title'],
-                      subtitle: t['sub'],
-                      icon: t['icon'],
-                      value: _togglesStates[t['id']] ?? false,
+                      key: ValueKey(t['id'] as String),
+                      title: t['title'] as String,
+                      subtitle: t['sub'] as String,
+                      icon: t['icon'] as IconData,
+                      value: _togglesStates[t['id'] as String] ?? false,
                       onChanged: (v) =>
                           setState(() => _togglesStates[t['id'] as String] = v),
                     )),
@@ -248,7 +285,7 @@ void _showLogoutDialog(BuildContext context) {
 
 // ── Section label ──────────────────────────────────────────────────────────────
 class _SectionLabel extends StatelessWidget {
-  _SectionLabel(this.label);
+  const _SectionLabel(this.label);
   final String label;
 
   @override
@@ -285,7 +322,7 @@ class _SliderCard extends StatelessWidget {
         color: AppColors.bgCard,
         borderRadius: BorderRadius.circular(AppSpacing.md),
         border: Border.all(
-          color: AppColors.primary.withOpacity(0.2),
+          color: AppColors.primary.withValues(alpha: 0.2),
         ),
       ),
       child: Row(
@@ -297,7 +334,7 @@ class _SliderCard extends StatelessWidget {
               onChanged: onChanged,
               onChangeEnd: onChangeEnd,
               activeColor: AppColors.primary,
-              inactiveColor: AppColors.primary.withOpacity(0.2),
+              inactiveColor: AppColors.primary.withValues(alpha: 0.2),
             ),
           ),
         ],
@@ -335,7 +372,7 @@ class _ToggleCard extends StatelessWidget {
         color: AppColors.bgCard,
         borderRadius: BorderRadius.circular(AppSpacing.md),
         border: Border.all(
-          color: AppColors.primary.withOpacity(0.2),
+          color: AppColors.primary.withValues(alpha: 0.2),
         ),
       ),
       child: Row(

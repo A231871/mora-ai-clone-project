@@ -1,7 +1,4 @@
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import '../../../core/constants/app_strings.dart';
-
-/// Reminder task model — UI-only, ready for Riverpod/backend later.
+/// Reminder task model — ready for Riverpod/backend.
 class Task {
   Task({
     required this.id,
@@ -10,14 +7,14 @@ class Task {
     required this.time,
     required this.frequency,
     required this.isoTime,
-    this.daysOfWeek = const [],
+    this.daysOfWeek = const[],
     this.isDone = false,
     this.isFeatured = false,
   });
 
   final String id;
   final String title;
-  final String category; // 'WORK' | 'HEALTH' | 'MORA' | 'SOCIAL'
+  final String category; // 'WORK' | 'HEALTH' | 'SHIZUKI' | 'SOCIAL'
   final String time;
   final String frequency;
   final String isoTime;
@@ -29,18 +26,23 @@ class Task {
     final tStr = json['scheduledTime'] as String?;
     String timeStr = '--:--';
     String finalIso = '';
+    
     if (tStr != null) {
       finalIso = tStr;
       final t = DateTime.parse(tStr).toLocal();
       timeStr = '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
     }
     
-    final days = (json['daysOfWeek'] as List?)?.map((e) => e.toString()).toList() ?? [];
+    final days = (json['daysOfWeek'] as List?)?.map((e) => e.toString()).toList() ??[];
+    
+    // LOGIC FIX: Try to read the category from the JSON first. 
+    // If it's null or missing, THEN fallback to 'SHIZUKI'.
+    final parsedCategory = (json['category'] as String?)?.toUpperCase() ?? 'SHIZUKI';
 
     return Task(
       id: json['_id'] as String? ?? json['id'] as String? ?? '',
       title: json['message'] as String? ?? 'Empty Task',
-      category: AppLocalizations.of(context)!.categoryShizuki, // Default category fallback
+      category: parsedCategory, 
       time: timeStr,
       isoTime: finalIso,
       frequency: days.isNotEmpty ? 'Weekly' : 'Once',

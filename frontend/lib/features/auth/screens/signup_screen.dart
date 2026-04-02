@@ -1,9 +1,8 @@
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:frontend/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
-import '../../../core/constants/app_strings.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../shared/widgets/grid_background.dart';
 import '../../../shared/widgets/mecha_button.dart';
@@ -81,7 +80,7 @@ class _SignupScreenState extends State<SignupScreen> {
       context.go('/'); // Explicit route instead of context.pop() due to go_router stack
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(result['message'] ?? 'Registration failed', style: TextStyle(color: Colors.redAccent))),
+        SnackBar(content: Text(result['message'] ?? 'Registration failed', style: const TextStyle(color: Colors.redAccent))),
       );
     }
   }
@@ -91,13 +90,13 @@ class _SignupScreenState extends State<SignupScreen> {
     return Scaffold(
       backgroundColor: AppColors.bgDeep,
       body: Stack(
-        children: [
+        children:[
           const GridBackground(),
           SafeArea(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
               child: Column(
-                children: [
+                children:[
                   const SizedBox(height: AppSpacing.md),
 
                   // ── BACK button ───────────────────────────────────────
@@ -120,16 +119,16 @@ class _SignupScreenState extends State<SignupScreen> {
                     key: const ValueKey('avatar-slot'),
                     child: Stack(
                       alignment: Alignment.center,
-                      children: [
+                      children:[
                         Container(
                           width: 160,
                           height: 160,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             gradient: RadialGradient(
-                              colors: [
-                                AppColors.accent.withOpacity(0.35),
-                                AppColors.accent.withOpacity(0.0),
+                              colors:[
+                                AppColors.accent.withValues(alpha: 0.35),
+                                AppColors.accent.withValues(alpha: 0.0),
                               ],
                             ),
                           ),
@@ -221,12 +220,12 @@ class _SignupTabs extends StatelessWidget {
         color: AppColors.bgCard,
         borderRadius: BorderRadius.circular(AppRadius.pill),
         border: Border.all(
-          color: AppColors.primary.withOpacity(0.3),
+          color: AppColors.primary.withValues(alpha: 0.3),
           width: 1,
         ),
       ),
       child: Row(
-        children: [
+        children:[
           _tab('LOG IN', isActive: false, onTap: onLogInTap),
           _tab('SIGN UP', isActive: true, onTap: () {}),
         ],
@@ -243,7 +242,7 @@ class _SignupTabs extends StatelessWidget {
           decoration: BoxDecoration(
             gradient: isActive
                 ? const LinearGradient(
-                    colors: [AppColors.primary, AppColors.accent],
+                    colors:[AppColors.primary, AppColors.accent],
                   )
                 : null,
             borderRadius: BorderRadius.circular(AppRadius.pill),

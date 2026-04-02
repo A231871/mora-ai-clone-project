@@ -52,7 +52,8 @@ class _MechaTextFieldState extends State<MechaTextField> {
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(AppSpacing.md),
               borderSide: BorderSide(
-                color: AppColors.primary.withOpacity(0.4),
+                // FIXED: Replaced .withOpacity with .withValues
+                color: AppColors.primary.withValues(alpha: 0.4),
                 width: 1.5,
               ),
             ),
