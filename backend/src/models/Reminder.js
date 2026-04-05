@@ -17,6 +17,10 @@ const reminderSchema = new mongoose.Schema({
   isCompleted: {
     type: Boolean,
     default: false
+  },
+  daysOfWeek: {
+    type: [String],
+    default: []
   }
 }, { timestamps: true });
 

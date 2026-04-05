@@ -32,15 +32,18 @@ class GlassmorphismButton extends StatelessWidget {
                 width: 64,
                 height: 64,
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.08),
+                  // FIXED: Replaced .withOpacity with .withValues(alpha: ...)
+                  color: Colors.white.withValues(alpha: 0.08),
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: AppColors.primary.withOpacity(0.6),
+                    // FIXED: Replaced .withOpacity with .withValues(alpha: ...)
+                    color: AppColors.primary.withValues(alpha: 0.6),
                     width: 1.5,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.primary.withOpacity(0.25),
+                      // FIXED: Replaced .withOpacity with .withValues(alpha: ...)
+                      color: AppColors.primary.withValues(alpha: 0.25),
                       blurRadius: 12,
                       spreadRadius: 1,
                     ),

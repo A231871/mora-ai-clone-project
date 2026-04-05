@@ -7,7 +7,8 @@ const initCronJobs = () => {
     try {
       const pendingReminders = await Reminder.find({
         scheduledTime: { $lte: new Date() },
-        isCompleted: false
+        isCompleted: false,
+        daysOfWeek: { $size: 0 } // Only auto-complete non-recurring tasks
       });
 
       if (pendingReminders.length > 0) {

@@ -1,15 +1,15 @@
+import 'package:frontend/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
-import '../../../core/constants/app_strings.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../shared/widgets/grid_background.dart';
 import '../../../shared/widgets/mecha_button.dart';
 import '../../../shared/widgets/mecha_text_field.dart';
 import '../../../shared/widgets/shizuki_animator.dart';
+import '../../../core/config/google_sign_in_config.dart';
 import '../services/auth_service.dart';
-import '../../chat/chat_screen.dart';
 
 // ── Login screen with full backend AuthService + Shizuki avatar UI ─────────────
 // Merged: feature/UI (design + ShizukiAnimator) + develop (AuthService backend)
@@ -34,27 +34,16 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  Future<void> _submit() async {
-    if (_usernameController.text.isEmpty || _passwordController.text.isEmpty) {
-      return;
-    setState(() => _isLoading = false);
+  final AuthService _authService = AuthService();
 
-    if (result['success']) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Welcome to Mora A.I Interface!', style: TextStyle(color: Colors.greenAccent))),
-        );
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const ChatScreen()),
-        );
-    } 
-    }else {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(result['message'], style: const TextStyle(color: Colors.redAccent))),
-        );
-      }
+  Future<void> _submit() async {
+    final loc = AppLocalizations.of(context)!;
+
+    if (_usernameController.text.isEmpty || _passwordController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(loc.fillBothFields, style: const TextStyle(color: Colors.redAccent))),
+      );
+      return;
     }
 
     setState(() {
@@ -62,19 +51,78 @@ class _LoginScreenState extends State<LoginScreen> {
       _currentEmotion = ShizukiEmotion.talk; // Shizuki "talks" while logging in
     });
 
-    // TODO: Replace with real AuthService call when backend is connected
-    // e.g. final result = await _authService.login(username, password);
-    // Simulating network delay for now
-    await Future.delayed(const Duration(milliseconds: 800));
+    final result = await _authService.login(
+      _usernameController.text.trim(), 
+      _passwordController.text.trim(),
+    );
 
     if (!mounted) return;
 
-    // On success — navigate home
     setState(() {
       _isLoading = false;
-      _currentEmotion = ShizukiEmotion.smile;
+      _currentEmotion = result['success'] ? ShizukiEmotion.smile : ShizukiEmotion.sad;
     });
-    context.go('/home');
+
+    if (result['success']) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(loc.welcomeShizukiLogin, style: const TextStyle(color: Colors.greenAccent))),
+      );
+      context.go('/home');
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(result['message'] ?? 'Login failed', style: const TextStyle(color: Colors.redAccent))),
+      );
+    }
+  }
+
+  Future<void> _signInWithGoogle() async {
+    final loc = AppLocalizations.of(context)!;
+
+    if (!GoogleSignInConfig.isConfigured) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(loc.googleNotConfigured, style: const TextStyle(color: Colors.cyanAccent)),
+          backgroundColor: AppColors.bgCard,
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _currentEmotion = ShizukiEmotion.talk;
+    });
+
+    final result = await _authService.signInWithGoogle();
+
+    if (!mounted) return;
+
+    setState(() {
+      _isLoading = false;
+    });
+
+    if (result['success'] == true) {
+      setState(() => _currentEmotion = ShizukiEmotion.smile);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(loc.welcomeShizukiLogin, style: const TextStyle(color: Colors.greenAccent))),
+      );
+      context.go('/home');
+      return;
+    }
+
+    final code = result['message'] as String?;
+    if (code == 'cancelled') {
+      setState(() => _currentEmotion = ShizukiEmotion.smile);
+      return;
+    }
+
+    setState(() => _currentEmotion = ShizukiEmotion.sad);
+    final msg = code == 'not_configured'
+        ? loc.googleNotConfigured
+        : (code == 'no_id_token' ? loc.googleSignInFailed : (result['message']?.toString() ?? loc.googleSignInFailed));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(msg, style: const TextStyle(color: Colors.redAccent))),
+    );
   }
 
   @override
@@ -82,13 +130,13 @@ class _LoginScreenState extends State<LoginScreen> {
     return Scaffold(
       backgroundColor: AppColors.bgDeep,
       body: Stack(
-        children: [
+        children:[
           const GridBackground(),
           SafeArea(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
               child: Column(
-                children: [
+                children:[
                   const SizedBox(height: AppSpacing.md),
 
                   // ── BACK button ───────────────────────────────────────
@@ -97,7 +145,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: TextButton(
                       onPressed: _isLoading ? null : () => context.go('/'),
                       child: Text(
-                        AppStrings.back,
+                        AppLocalizations.of(context)!.back,
                         style: AppTextStyles.bodySmall
                             .copyWith(color: AppColors.textSecondary),
                       ),
@@ -111,16 +159,16 @@ class _LoginScreenState extends State<LoginScreen> {
                     key: const ValueKey('avatar-slot'),
                     child: Stack(
                       alignment: Alignment.center,
-                      children: [
+                      children:[
                         Container(
                           width: 160,
                           height: 160,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             gradient: RadialGradient(
-                              colors: [
-                                AppColors.primary.withOpacity(0.35),
-                                AppColors.primary.withOpacity(0.0),
+                              colors:[
+                                AppColors.primary.withValues(alpha: 0.35),
+                                AppColors.primary.withValues(alpha: 0.0),
                               ],
                             ),
                           ),
@@ -137,9 +185,9 @@ class _LoginScreenState extends State<LoginScreen> {
                   const SizedBox(height: AppSpacing.sm),
 
                   // ── Title ─────────────────────────────────────────────
-                  Text(AppStrings.welcomeBack, style: AppTextStyles.displayMedium),
+                  Text(AppLocalizations.of(context)!.welcomeBack, style: AppTextStyles.displayMedium),
                   const SizedBox(height: AppSpacing.xs),
-                  const Text(AppStrings.loginSubtitle, style: AppTextStyles.hint),
+                  Text(AppLocalizations.of(context)!.loginSubtitle, style: AppTextStyles.hint),
 
                   const SizedBox(height: AppSpacing.lg),
 
@@ -153,14 +201,14 @@ class _LoginScreenState extends State<LoginScreen> {
 
                   // ── Form ──────────────────────────────────────────────
                   MechaTextField(
-                    label: AppStrings.usernameLabel,
-                    hint: AppStrings.usernamePlaceholder,
+                    label: AppLocalizations.of(context)!.usernameLabel,
+                    hint: AppLocalizations.of(context)!.usernamePlaceholder,
                     controller: _usernameController,
                   ),
                   const SizedBox(height: AppSpacing.md),
                   MechaTextField(
-                    label: AppStrings.passwordLabel,
-                    hint: AppStrings.passwordPlaceholder,
+                    label: AppLocalizations.of(context)!.passwordLabel,
+                    hint: AppLocalizations.of(context)!.passwordPlaceholder,
                     isPassword: true,
                     controller: _passwordController,
                   ),
@@ -169,24 +217,35 @@ class _LoginScreenState extends State<LoginScreen> {
 
                   Align(
                     alignment: Alignment.centerRight,
-                    child: Text(AppStrings.forgotPassword, style: AppTextStyles.caption),
+                    child: GestureDetector(
+                      onTap: _isLoading ? null : _signInWithGoogle,
+                      child: Text(AppLocalizations.of(context)!.forgotPassword, style: AppTextStyles.caption.copyWith(decoration: TextDecoration.underline)),
+                    ),
                   ),
 
                   const SizedBox(height: AppSpacing.lg),
 
                   // ── LOG IN button ─────────────────────────────────────
                   MechaButton(
-                    label: _isLoading ? 'Logging in...' : AppStrings.logIn,
+                    label: _isLoading ? AppLocalizations.of(context)!.loggingIn : AppLocalizations.of(context)!.logIn,
                     onTap: _isLoading ? () {} : _submit,
                   ),
 
                   const SizedBox(height: AppSpacing.md),
-                  const Text(AppStrings.orDivider, style: AppTextStyles.caption),
+                  Text(AppLocalizations.of(context)!.orDivider, style: AppTextStyles.caption),
+                  const SizedBox(height: AppSpacing.md),
+
+                  MechaButton(
+                    label: AppLocalizations.of(context)!.continueWithGoogle,
+                    variant: MechaButtonVariant.outlined,
+                    onTap: _isLoading ? () {} : _signInWithGoogle,
+                  ),
+
                   const SizedBox(height: AppSpacing.md),
 
                   // ── CREATE ACCOUNT button ─────────────────────────────
                   MechaButton(
-                    label: AppStrings.createAccount,
+                    label: AppLocalizations.of(context)!.createAccount,
                     variant: MechaButtonVariant.outlined,
                     onTap: _isLoading ? () {} : () => context.go('/signup'),
                   ),
@@ -216,14 +275,14 @@ class _AuthTabs extends StatelessWidget {
         color: AppColors.bgCard,
         borderRadius: BorderRadius.circular(AppRadius.pill),
         border: Border.all(
-          color: AppColors.primary.withOpacity(0.3),
+          color: AppColors.primary.withValues(alpha: 0.3),
           width: 1,
         ),
       ),
       child: Row(
-        children: [
-          _tab(AppStrings.logIn, isActive: activeTab == 0, onTap: () {}),
-          _tab(AppStrings.signUp, isActive: activeTab == 1, onTap: onSignUpTap),
+        children:[
+          _tab(AppLocalizations.of(context)!.logIn, isActive: activeTab == 0, onTap: () {}),
+          _tab(AppLocalizations.of(context)!.signUp, isActive: activeTab == 1, onTap: onSignUpTap),
         ],
       ),
     );
@@ -238,7 +297,7 @@ class _AuthTabs extends StatelessWidget {
           decoration: BoxDecoration(
             gradient: isActive
                 ? const LinearGradient(
-                    colors: [AppColors.primary, AppColors.accent],
+                    colors:[AppColors.primary, AppColors.accent],
                   )
                 : null,
             borderRadius: BorderRadius.circular(AppRadius.pill),

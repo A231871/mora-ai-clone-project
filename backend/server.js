@@ -4,6 +4,7 @@ const http = require('http');
 const cors = require('cors');
 const connectDB = require('./src/config/db');
 const authRoutes = require('./src/routes/authRoutes');
+const reminderRoutes = require('./src/routes/reminderRoutes');
 const { initSocket } = require('./src/socket');
 const { initCronJobs } = require('./src/services/cron.service');
 
@@ -20,6 +21,7 @@ connectDB();
 
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/reminders', reminderRoutes);
 
 // Basic test route
 app.get('/', (req, res) => {

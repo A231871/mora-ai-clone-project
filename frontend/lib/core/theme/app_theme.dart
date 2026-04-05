@@ -41,7 +41,7 @@ class AppTheme {
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(AppSpacing.md),
             borderSide: BorderSide(
-              color: AppColors.primary.withOpacity(0.5),
+              color: AppColors.primary.withValues(alpha: 0.5),
               width: 1.5,
             ),
           ),
@@ -61,17 +61,17 @@ class AppTheme {
 
         // ── Switch ─────────────────────────────────────────────────────────
         switchTheme: SwitchThemeData(
-          thumbColor: MaterialStateProperty.resolveWith((states) {
-            return states.contains(MaterialState.selected)
+          thumbColor: WidgetStateProperty.resolveWith((states) {
+            return states.contains(WidgetState.selected)
                 ? AppColors.textPrimary
                 : AppColors.textSecondary;
           }),
-          trackColor: MaterialStateProperty.resolveWith((states) {
-            return states.contains(MaterialState.selected)
+          trackColor: WidgetStateProperty.resolveWith((states) {
+            return states.contains(WidgetState.selected)
                 ? AppColors.primary
                 : AppColors.bgCard;
           }),
-          trackOutlineColor: MaterialStateProperty.all(Colors.transparent),
+          trackOutlineColor: WidgetStateProperty.all(Colors.transparent),
         ),
 
         // ── Progress Indicator ─────────────────────────────────────────────

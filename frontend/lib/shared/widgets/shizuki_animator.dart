@@ -34,8 +34,8 @@ extension ShizukiEmotionX on ShizukiEmotion {
 
   double get bobAmplitude {
     switch (this) {
-      case ShizukiEmotion.idle:     return 6.0;
-      case ShizukiEmotion.cheer:    return 18.0;
+      case ShizukiEmotion.idle:     return 18.0; // Increased significantly to simulate deep breathing
+      case ShizukiEmotion.cheer:    return 26.0;
       case ShizukiEmotion.smile:    return 4.0;
       case ShizukiEmotion.talk:     return 3.0;
       case ShizukiEmotion.sad:      return 2.0;
@@ -45,7 +45,7 @@ extension ShizukiEmotionX on ShizukiEmotion {
 
   double get swayAmplitude {
     switch (this) {
-      case ShizukiEmotion.idle:     return 3.0;
+      case ShizukiEmotion.idle:     return 10.0; // Slight sideways shift
       case ShizukiEmotion.cheer:    return 0.0;
       case ShizukiEmotion.smile:    return 6.0;
       case ShizukiEmotion.talk:     return 3.0;
@@ -56,7 +56,7 @@ extension ShizukiEmotionX on ShizukiEmotion {
 
   double get scaleMin {
     switch (this) {
-      case ShizukiEmotion.idle:     return 0.98;
+      case ShizukiEmotion.idle:     return 0.94; // Exaggerate breathing scale
       case ShizukiEmotion.cheer:    return 0.95;
       case ShizukiEmotion.smile:    return 0.99;
       case ShizukiEmotion.talk:     return 0.99;
@@ -67,7 +67,7 @@ extension ShizukiEmotionX on ShizukiEmotion {
 
   double get scaleMax {
     switch (this) {
-      case ShizukiEmotion.idle:     return 1.02;
+      case ShizukiEmotion.idle:     return 1.06; // Exaggerate breathing scale
       case ShizukiEmotion.cheer:    return 1.08;
       case ShizukiEmotion.smile:    return 1.03;
       case ShizukiEmotion.talk:     return 1.01;
@@ -213,6 +213,7 @@ class _ShizukiAnimatorState extends State<ShizukiAnimator>
       key: ValueKey('shizuki-${emotion.name}'),
       fit: BoxFit.contain,
       errorBuilder: (_, __, ___) => Center(
+        // FIXED: Added missing const to TextStyle
         child: Text(emotion.fallbackEmoji,
             style: const TextStyle(fontSize: 80)),
       ),

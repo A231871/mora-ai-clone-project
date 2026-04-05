@@ -38,6 +38,8 @@ This is a collaborative Monorepo. We divide the work so we don't block each othe
     *   *Frontend:* Tracks screen time and shows Mecha-styled popup warnings if the user is on the app too long.
 5.  **Dynamic Avatar:** A Flutter `Stack` widget that overlays PNG layers based on the user's saved DB preferences.
 
+> **REST API MANDATE:** Even if a feature uses WebSockets for real-time updates, all CRUD operations MUST ALSO have standard HTTP REST endpoints exposed in the `backend/src/routes/` folder so they can be tested via Postman.
+
 ## 📂 5. Monorepo Structure
 We are using a simple Monorepo structure to keep everything in one place.
 

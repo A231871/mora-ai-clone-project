@@ -1,6 +1,7 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart'; // Added for debugPrint
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:socket_io_client/socket_io_client.dart' as IO;
+import 'package:socket_io_client/socket_io_client.dart' as io; // Changed IO to io
 import '../constants/api_constants.dart';
 
 class ChatService {
@@ -9,8 +10,11 @@ class ChatService {
   factory ChatService() => _instance;
   ChatService._internal();
 
-  IO.Socket? _socket;
+  io.Socket? _socket;
   
+  final _historyController = StreamController<List<dynamic>>.broadcast();
+  Stream<List<dynamic>> get historyStream => _historyController.stream;
+
   // Stream to let the UI listen for new incoming messages
   final _messageController = StreamController<Map<String, dynamic>>.broadcast();
   Stream<Map<String, dynamic>> get messageStream => _messageController.stream;
@@ -19,53 +23,171 @@ class ChatService {
   final _typingController = StreamController<bool>.broadcast();
   Stream<bool> get typingStream => _typingController.stream;
 
+  // Stream for System Warning Popups (Cron/Screen-time)
+  final _systemAlertController = StreamController<String>.broadcast();
+  Stream<String> get systemAlertStream => _systemAlertController.stream;
+
+  // Stream for Pending Mission Logs
+  final _pendingRemindersController = StreamController<List<dynamic>>.broadcast();
+  Stream<List<dynamic>> get pendingRemindersStream => _pendingRemindersController.stream;
+  List<dynamic> currentReminders =[];
+
+  Future<void>? _connectFuture;
+
+  /// Completes when the socket is connected (or immediately if already connected).
+  /// Callers should subscribe to streams before `await connect()` so they do not miss payloads.
   Future<void> connect() async {
     if (_socket != null && _socket!.connected) return;
 
+    if (_connectFuture != null) return _connectFuture!;
+
+    _connectFuture = _connectOnce();
+    try {
+      await _connectFuture;
+    } finally {
+      _connectFuture = null;
+    }
+  }
+
+  Future<void> _connectOnce() async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('jwt_token');
 
     if (token == null) {
-      print("[ChatService] Cannot connect: No JWT token found");
+      debugPrint("[ChatService] Cannot connect: No JWT token found");
       return;
     }
 
-    print("[ChatService] Connecting to WebSocket...");
+    debugPrint("[ChatService] Connecting to WebSocket...");
 
-    _socket = IO.io(
+    final completer = Completer<void>();
+
+    _socket = io.io(
       ApiConstants.socketUrl,
-      IO.OptionBuilder()
+      io.OptionBuilder()
           .setTransports(['websocket'])
           .disableAutoConnect()
+          .enableForceNew()
           .setAuth({'token': token})
           .build(),
     );
 
+    _registerSocketHandlers(completer);
     _socket!.connect();
 
+    try {
+      await completer.future.timeout(const Duration(seconds: 25));
+    } catch (e, st) {
+      debugPrint("[ChatService] Connect failed: $e\n$st");
+      disconnect();
+      rethrow;
+    }
+  }
+
+  void _registerSocketHandlers(Completer<void> connectCompleter) {
     _socket!.onConnect((_) {
-      print("[ChatService] Connected to Server successfully");
+      debugPrint("[ChatService] Connected to Server successfully");
+      if (!connectCompleter.isCompleted) connectCompleter.complete();
     });
 
     _socket!.onConnectError((err) {
-      print("[ChatService] Connection Error: $err");
+      debugPrint("[ChatService] Connection Error: $err");
+      if (!connectCompleter.isCompleted) {
+        connectCompleter.completeError(err ?? 'WebSocket connection error');
+      }
     });
 
-    // Listen for AI replies
+    _socket!.on('chat:history_loaded', (data) {
+      _historyController.add(List<dynamic>.from(data));
+    });
+
     _socket!.on('chat:receive', (data) {
       _messageController.add(Map<String, dynamic>.from(data));
     });
 
-    // Listen for typing indicator
     _socket!.on('chat:typing', (data) {
       final isTyping = data['status'] ?? false;
       _typingController.add(isTyping);
     });
+
+    _socket!.on('system:alert', (data) {
+      _systemAlertController.add(data['message']);
+    });
+
+    _socket!.on('reminder:pending_loaded', (data) {
+      if (data != null) {
+        currentReminders = List<dynamic>.from(data);
+        _pendingRemindersController.add(currentReminders);
+      }
+    });
   }
 
-  void sendMessage(String message) {
+  void fetchPendingReminders() {
     if (_socket != null && _socket!.connected) {
-      _socket!.emit('chat:send', {'message': message});
+      _socket!.emit('reminder:fetch_pending');
+    }
+  }
+
+  void fetchHistory() {
+    if (_socket != null && _socket!.connected) {
+      _socket!.emit('chat:fetch_history');
+    }
+  }
+
+  void clearChatHistory() {
+    if (_socket != null && _socket!.connected) {
+      _socket!.emit('chat:clear_history');
+    }
+  }
+
+  void createManualReminder(String task, String isoTime, List<String> daysOfWeek) {
+    if (_socket != null && _socket!.connected) {
+      _socket!.emit('reminder:create', {
+        'task': task,
+        'scheduledTime': isoTime,
+        'daysOfWeek': daysOfWeek,
+      });
+    }
+  }
+
+  void updateReminder({
+    required String id,
+    bool? isCompleted,
+    String? task,
+    String? isoTime,
+    List<String>? daysOfWeek,
+  }) {
+    if (_socket != null && _socket!.connected) {
+      final payload = <String, dynamic>{'id': id};
+      if (isCompleted != null) payload['isCompleted'] = isCompleted;
+      if (task != null) payload['task'] = task;
+      if (isoTime != null) payload['scheduledTime'] = isoTime;
+      if (daysOfWeek != null) payload['daysOfWeek'] = daysOfWeek;
+      _socket!.emit('reminder:update', payload);
+    }
+  }
+
+  void deleteReminder(String id) {
+    if (_socket != null && _socket!.connected) {
+      _socket!.emit('reminder:delete', {'id': id});
+    }
+  }
+
+  void deleteAllReminders() {
+    if (_socket != null && _socket!.connected) {
+      _socket!.emit('reminder:delete_all');
+    }
+  }
+
+  void completeAllReminders() {
+    if (_socket != null && _socket!.connected) {
+      _socket!.emit('reminder:complete_all');
+    }
+  }
+
+  void sendMessage(String message, {String lang = 'en'}) {
+    if (_socket != null && _socket!.connected) {
+      _socket!.emit('chat:send', {'message': message, 'lang': lang});
       // Optionally echo the message back to local UI immediately
       _messageController.add({
         'sender': 'User',
@@ -73,12 +195,12 @@ class ChatService {
         'timestamp': DateTime.now().toIso8601String(),
       });
     } else {
-      print("[ChatService] Error: Socket not connected!");
+      debugPrint("[ChatService] Error: Socket not connected!");
     }
   }
 
   void disconnect() {
-    print("[ChatService] Disconnecting WebSocket...");
+    debugPrint("[ChatService] Disconnecting WebSocket...");
     _socket?.disconnect();
     _socket?.dispose();
     _socket = null;
@@ -87,5 +209,8 @@ class ChatService {
   void dispose() {
     _messageController.close();
     _typingController.close();
+    _historyController.close();
+    _systemAlertController.close();
+    _pendingRemindersController.close();
   }
 }

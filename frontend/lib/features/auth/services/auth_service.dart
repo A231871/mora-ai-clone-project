@@ -1,6 +1,8 @@
 import 'dart:convert';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../../core/config/google_sign_in_config.dart';
 import '../../../core/constants/api_constants.dart';
 
 class AuthService {
@@ -61,5 +63,50 @@ class AuthService {
   Future<void> logout() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_tokenKey);
+  }
+
+  Future<Map<String, dynamic>> signInWithGoogle() async {
+    if (!GoogleSignInConfig.isConfigured) {
+      return {'success': false, 'message': 'not_configured'};
+    }
+
+    try {
+      final googleSignIn = GoogleSignIn(
+        scopes: ['email', 'profile'],
+        serverClientId: GoogleSignInConfig.serverClientId,
+      );
+
+      final account = await googleSignIn.signIn();
+      if (account == null) {
+        return {'success': false, 'message': 'cancelled'};
+      }
+
+      final auth = await account.authentication;
+      final idToken = auth.idToken;
+      if (idToken == null || idToken.isEmpty) {
+        return {'success': false, 'message': 'no_id_token'};
+      }
+
+      final response = await http.post(
+        Uri.parse(ApiConstants.googleAuthEndpoint),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'idToken': idToken}),
+      );
+
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+
+      if (response.statusCode == 200 && data['token'] != null) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString(_tokenKey, data['token'] as String);
+        return {'success': true, 'message': 'Login successful'};
+      }
+
+      return {
+        'success': false,
+        'message': data['error'] ?? 'Google login failed',
+      };
+    } catch (e) {
+      return {'success': false, 'message': 'Network error: $e'};
+    }
   }
 }

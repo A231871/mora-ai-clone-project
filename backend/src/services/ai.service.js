@@ -2,13 +2,16 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-const model = genAI.getGenerativeModel({
-  model: "gemini-2.5-flash", 
-  systemInstruction: "You are Mora, a cute AI assistant with a mecha anime style (một trợ lý AI dễ thương, phong cách mecha anime). You are helpful, proactive, and occasionally use mecha anime terminology. Keep responses concise and engaging for a mobile UI."
-});
-
-const generateResponseWithHistory = async (userMessage, dbHistory) => {
+const generateResponseWithHistory = async (userMessage, dbHistory, lang = 'en') => {
   try {
+    const languageName = (lang === 'vi') ? 'Vietnamese' : 'English';
+    const sysInst = `You are Shizuki, a cute AI assistant with a mecha anime style. CRITICAL OVERRIDE: Regardless of what you said in previous messages, you MUST NOW ALWAYS respond strictly in ${languageName}. Do not mention your language protocols, just speak in ${languageName}. Be proactive, helpful, and concise.`;
+
+    const model = genAI.getGenerativeModel({
+      model: "gemini-2.5-flash", 
+      systemInstruction: sysInst
+    });
+
     // 1. Transform DB history into Gemini's format
     let structuredHistory = dbHistory.map(msg => ({
       role: msg.role, 

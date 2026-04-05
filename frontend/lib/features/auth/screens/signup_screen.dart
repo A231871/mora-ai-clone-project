@@ -1,38 +1,113 @@
+import 'package:frontend/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
-import '../../../core/constants/app_strings.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../shared/widgets/grid_background.dart';
 import '../../../shared/widgets/mecha_button.dart';
 import '../../../shared/widgets/mecha_text_field.dart';
 import '../../../shared/widgets/shizuki_animator.dart';
+import '../services/auth_service.dart';
 
-class SignupScreen extends StatelessWidget {
+class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
+
+  @override
+  State<SignupScreen> createState() => _SignupScreenState();
+}
+
+class _SignupScreenState extends State<SignupScreen> {
+  final TextEditingController _usernameController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _confirmPasswordController = TextEditingController();
+  bool _isLoading = false;
+  final AuthService _authService = AuthService();
+
+  @override
+  void dispose() {
+    _usernameController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    final loc = AppLocalizations.of(context)!;
+
+    if (_usernameController.text.isEmpty || _passwordController.text.isEmpty || _confirmPasswordController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(loc.fillAllFields, style: const TextStyle(color: Colors.redAccent))),
+      );
+      return;
+    }
+
+    if (_passwordController.text != _confirmPasswordController.text) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(loc.passwordsDoNotMatch, style: const TextStyle(color: Colors.redAccent))),
+      );
+      return;
+    }
+
+    final passwordRegex = RegExp(r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W]).{8,}$');
+    if (!passwordRegex.hasMatch(_passwordController.text)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(loc.passwordRulesHint, style: const TextStyle(color: Colors.redAccent)),
+          backgroundColor: AppColors.bgCard,
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    final result = await _authService.register(
+      _usernameController.text.trim(), 
+      _passwordController.text.trim(),
+    );
+
+    if (!mounted) return;
+
+    setState(() {
+      _isLoading = false;
+    });
+
+    if (result['success']) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(loc.registrationSuccess, style: const TextStyle(color: Colors.greenAccent))),
+      );
+      context.go('/');
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(result['message'] ?? 'Registration failed', style: const TextStyle(color: Colors.redAccent))),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.bgDeep,
       body: Stack(
-        children: [
+        children:[
           const GridBackground(),
           SafeArea(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
               child: Column(
-                children: [
+                children:[
                   const SizedBox(height: AppSpacing.md),
 
                   // ── BACK button ───────────────────────────────────────
                   Align(
                     alignment: Alignment.centerLeft,
                     child: TextButton(
-                      onPressed: () => context.pop(),
+                      onPressed: () => context.go('/'),
                       child: Text(
-                        AppStrings.back,
+                        AppLocalizations.of(context)!.back,
                         style: AppTextStyles.bodySmall
                             .copyWith(color: AppColors.textSecondary),
                       ),
@@ -46,16 +121,16 @@ class SignupScreen extends StatelessWidget {
                     key: const ValueKey('avatar-slot'),
                     child: Stack(
                       alignment: Alignment.center,
-                      children: [
+                      children:[
                         Container(
                           width: 160,
                           height: 160,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             gradient: RadialGradient(
-                              colors: [
-                                AppColors.accent.withOpacity(0.35),
-                                AppColors.accent.withOpacity(0.0),
+                              colors:[
+                                AppColors.accent.withValues(alpha: 0.35),
+                                AppColors.accent.withValues(alpha: 0.0),
                               ],
                             ),
                           ),
@@ -72,49 +147,59 @@ class SignupScreen extends StatelessWidget {
                   const SizedBox(height: AppSpacing.sm),
 
                   // ── Title ─────────────────────────────────────────────
-                  Text(AppStrings.joinMora,
+                  Text(AppLocalizations.of(context)!.joinMora,
                       style: AppTextStyles.displayMedium.copyWith(
                         color: AppColors.primary,
                       )),
                   const SizedBox(height: AppSpacing.xs),
-                  const Text(AppStrings.signupSubtitle, style: AppTextStyles.hint),
+                  Text(AppLocalizations.of(context)!.signupSubtitle, style: AppTextStyles.hint),
 
                   const SizedBox(height: AppSpacing.lg),
 
                   // ── SIGN UP / LOG IN tabs ─────────────────────────────
-                  _SignupTabs(onLogInTap: () => context.pop()),
+                  _SignupTabs(
+                    onLogInTap: _isLoading ? () {} : () => context.go('/'),
+                  ),
 
                   const SizedBox(height: AppSpacing.lg),
 
                   // ── Form ──────────────────────────────────────────────
-                  const MechaTextField(
-                    label: AppStrings.usernameLabel,
-                    hint: AppStrings.usernamePlaceholder,
+                  MechaTextField(
+                    label: AppLocalizations.of(context)!.usernameLabel,
+                    hint: AppLocalizations.of(context)!.usernamePlaceholder,
+                    controller: _usernameController,
                   ),
                   const SizedBox(height: AppSpacing.md),
-                  const MechaTextField(
-                    label: AppStrings.passwordLabel,
-                    hint: AppStrings.passwordPlaceholder,
+                  MechaTextField(
+                    label: AppLocalizations.of(context)!.passwordLabel,
+                    hint: AppLocalizations.of(context)!.passwordPlaceholder,
                     isPassword: true,
+                    controller: _passwordController,
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  MechaTextField(
+                    label: AppLocalizations.of(context)!.confirmPasswordLabel,
+                    hint: AppLocalizations.of(context)!.confirmPasswordPlaceholder,
+                    isPassword: true,
+                    controller: _confirmPasswordController,
                   ),
 
                   const SizedBox(height: AppSpacing.xl),
 
                   // ── CREATE ACCOUNT button ─────────────────────────────
                   MechaButton(
-                    label: AppStrings.createAccount,
-                    onTap: () => context.go('/home'),
+                    label: _isLoading ? AppLocalizations.of(context)!.creatingAccount : AppLocalizations.of(context)!.createAccount,
+                    onTap: _isLoading ? () {} : _submit,
                   ),
 
                   const SizedBox(height: AppSpacing.md),
-                  const Text(AppStrings.orDivider, style: AppTextStyles.caption),
+                  Text(AppLocalizations.of(context)!.orDivider, style: AppTextStyles.caption),
                   const SizedBox(height: AppSpacing.md),
 
-                  // ── BACK TO LOGIN button ──────────────────────────────
                   MechaButton(
-                    label: AppStrings.backToLogin,
+                    label: AppLocalizations.of(context)!.backToLogin,
                     variant: MechaButtonVariant.outlined,
-                    onTap: () => context.pop(),
+                    onTap: _isLoading ? () {} : () => context.go('/'),
                   ),
 
                   const SizedBox(height: AppSpacing.xl),
@@ -134,19 +219,20 @@ class _SignupTabs extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
     return Container(
       decoration: BoxDecoration(
         color: AppColors.bgCard,
         borderRadius: BorderRadius.circular(AppRadius.pill),
         border: Border.all(
-          color: AppColors.primary.withOpacity(0.3),
+          color: AppColors.primary.withValues(alpha: 0.3),
           width: 1,
         ),
       ),
       child: Row(
-        children: [
-          _tab('LOG IN', isActive: false, onTap: onLogInTap),
-          _tab('SIGN UP', isActive: true, onTap: () {}),
+        children:[
+          _tab(loc.logIn, isActive: false, onTap: onLogInTap),
+          _tab(loc.signUp, isActive: true, onTap: () {}),
         ],
       ),
     );
@@ -161,7 +247,7 @@ class _SignupTabs extends StatelessWidget {
           decoration: BoxDecoration(
             gradient: isActive
                 ? const LinearGradient(
-                    colors: [AppColors.primary, AppColors.accent],
+                    colors:[AppColors.primary, AppColors.accent],
                   )
                 : null,
             borderRadius: BorderRadius.circular(AppRadius.pill),
