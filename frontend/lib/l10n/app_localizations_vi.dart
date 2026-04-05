@@ -9,7 +9,7 @@ class AppLocalizationsVi extends AppLocalizations {
   AppLocalizationsVi([String locale = 'vi']) : super(locale);
 
   @override
-  String get appName => 'Mora AI';
+  String get appName => 'Shizuki AI';
 
   @override
   String get appVersion => 'v2.5.0';
@@ -18,7 +18,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get systemOnline => '◆ HỆ THỐNG ONLINE ◆';
 
   @override
-  String get moraTitle => 'MORA';
+  String get moraTitle => 'SHIZUKI';
 
   @override
   String get subtitle => 'TRỢ LÝ ẢO';
@@ -36,7 +36,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get loginSubtitle => 'Đăng nhập để tiếp tục hành trình ✦';
 
   @override
-  String get joinMora => 'THAM GIA MORA';
+  String get joinMora => 'THAM GIA SHIZUKI';
 
   @override
   String get signupSubtitle => 'Tạo tài khoản mới của bạn ✦';
@@ -70,6 +70,12 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get passwordPlaceholder => 'Nhập mật khẩu...';
+
+  @override
+  String get confirmPasswordLabel => 'XÁC NHẬN MẬT KHẨU';
+
+  @override
+  String get confirmPasswordPlaceholder => 'Nhập lại mật khẩu';
 
   @override
   String get goodMorning => 'CHÀO BUỔI SÁNG';
@@ -185,4 +191,80 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get back => '< QUAY LẠI';
+
+  @override
+  String get languageSectionLabel => 'NGÔN NGỮ';
+
+  @override
+  String get systemLanguageLabel => 'Ngôn ngữ hệ thống';
+
+  @override
+  String get logoutDialogTitle => 'NGẮT KẾT NỐI HỆ THỐNG';
+
+  @override
+  String get logoutDialogBody =>
+      'Bạn có chắc muốn ngắt kết nối?\nPhiên hiện tại sẽ kết thúc.';
+
+  @override
+  String get actionCancel => 'HỦY';
+
+  @override
+  String get actionDisconnect => 'NGẮT KẾT NỐI';
+
+  @override
+  String get loggingIn => 'Đang đăng nhập...';
+
+  @override
+  String get creatingAccount => 'Đang tạo...';
+
+  @override
+  String get welcomeShizukiLogin => 'Chào mừng đến với Shizuki!';
+
+  @override
+  String get fillBothFields => 'Vui lòng điền cả hai ô';
+
+  @override
+  String get fillAllFields => 'Vui lòng điền đủ các ô';
+
+  @override
+  String get passwordsDoNotMatch => 'Mật khẩu không khớp';
+
+  @override
+  String get passwordRulesHint =>
+      'Mật khẩu cần chữ hoa, chữ thường, số và ký tự đặc biệt (tối thiểu 8 ký tự)';
+
+  @override
+  String get registrationSuccess => 'Đăng ký thành công! Vui lòng đăng nhập.';
+
+  @override
+  String get clearMemoryTitle => 'XÓA BỘ NHỚ TRÒ CHUYỆN?';
+
+  @override
+  String get clearMemoryBody =>
+      'Bạn có chắc muốn xóa vĩnh viễn toàn bộ lịch sử chat? Không thể hoàn tác.';
+
+  @override
+  String get actionDelete => 'XÓA';
+
+  @override
+  String get notificationTaskTitle => 'Báo thức Shizuki';
+
+  @override
+  String get voiceOptionA => 'Giọng A';
+
+  @override
+  String get voiceOptionB => 'Giọng B';
+
+  @override
+  String get continueWithGoogle => 'Tiếp tục với Google';
+
+  @override
+  String get googleNotConfigured =>
+      'Chưa cấu hình đăng nhập Google. Hãy build với --dart-define=GOOGLE_SERVER_CLIENT_ID=mã_web_client.';
+
+  @override
+  String get googleSignInFailed => 'Đăng nhập Google thất bại';
+
+  @override
+  String get googleSignInCancelled => 'Đã hủy đăng nhập';
 }

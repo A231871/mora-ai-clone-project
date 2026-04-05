@@ -1,0 +1,18 @@
+{
+	"Version": 3,
+	"FileReferences": {
+		"Moc": "Shizuke_Real.moc3",
+		"Textures": [
+			"Shizuke_Real.2048/texture_00.png"
+		],
+		"Physics": "Shizuke_Real.physics3.json",
+		"DisplayInfo": "Shizuke_Real.cdi3.json"
+	},
+	"Groups": [
+		{
+			"Target": "Parameter",
+			"Name": "EyeBlink",
+			"Ids": []
+		}
+	]
+}

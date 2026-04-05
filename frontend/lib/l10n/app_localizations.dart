@@ -101,7 +101,7 @@ abstract class AppLocalizations {
   /// No description provided for @appName.
   ///
   /// In en, this message translates to:
-  /// **'Mora AI'**
+  /// **'Shizuki AI'**
   String get appName;
 
   /// No description provided for @appVersion.
@@ -119,7 +119,7 @@ abstract class AppLocalizations {
   /// No description provided for @moraTitle.
   ///
   /// In en, this message translates to:
-  /// **'MORA'**
+  /// **'SHIZUKI'**
   String get moraTitle;
 
   /// No description provided for @subtitle.
@@ -155,7 +155,7 @@ abstract class AppLocalizations {
   /// No description provided for @joinMora.
   ///
   /// In en, this message translates to:
-  /// **'JOIN MORA'**
+  /// **'JOIN SHIZUKI'**
   String get joinMora;
 
   /// No description provided for @signupSubtitle.
@@ -223,6 +223,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Enter your password...'**
   String get passwordPlaceholder;
+
+  /// No description provided for @confirmPasswordLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'CONFIRM PASSWORD'**
+  String get confirmPasswordLabel;
+
+  /// No description provided for @confirmPasswordPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Re-enter your password'**
+  String get confirmPasswordPlaceholder;
 
   /// No description provided for @goodMorning.
   ///
@@ -451,6 +463,150 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'< BACK'**
   String get back;
+
+  /// No description provided for @languageSectionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'LANGUAGE'**
+  String get languageSectionLabel;
+
+  /// No description provided for @systemLanguageLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'System language'**
+  String get systemLanguageLabel;
+
+  /// No description provided for @logoutDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'SYSTEM DISCONNECT'**
+  String get logoutDialogTitle;
+
+  /// No description provided for @logoutDialogBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to disconnect?\nActive session will be terminated.'**
+  String get logoutDialogBody;
+
+  /// No description provided for @actionCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'CANCEL'**
+  String get actionCancel;
+
+  /// No description provided for @actionDisconnect.
+  ///
+  /// In en, this message translates to:
+  /// **'DISCONNECT'**
+  String get actionDisconnect;
+
+  /// No description provided for @loggingIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Logging in...'**
+  String get loggingIn;
+
+  /// No description provided for @creatingAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Creating...'**
+  String get creatingAccount;
+
+  /// No description provided for @welcomeShizukiLogin.
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome to Shizuki!'**
+  String get welcomeShizukiLogin;
+
+  /// No description provided for @fillBothFields.
+  ///
+  /// In en, this message translates to:
+  /// **'Please fill in both fields'**
+  String get fillBothFields;
+
+  /// No description provided for @fillAllFields.
+  ///
+  /// In en, this message translates to:
+  /// **'Please fill in all fields'**
+  String get fillAllFields;
+
+  /// No description provided for @passwordsDoNotMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Passwords do not match'**
+  String get passwordsDoNotMatch;
+
+  /// No description provided for @passwordRulesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Password must include upper and lower case, a number, and a special character (min 8 characters)'**
+  String get passwordRulesHint;
+
+  /// No description provided for @registrationSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Registration successful! Please log in.'**
+  String get registrationSuccess;
+
+  /// No description provided for @clearMemoryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'CLEAR MEMORY CORE?'**
+  String get clearMemoryTitle;
+
+  /// No description provided for @clearMemoryBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to permanently delete all chat history? This action cannot be undone.'**
+  String get clearMemoryBody;
+
+  /// No description provided for @actionDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'DELETE'**
+  String get actionDelete;
+
+  /// No description provided for @notificationTaskTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Shizuki task alarm'**
+  String get notificationTaskTitle;
+
+  /// No description provided for @voiceOptionA.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice A'**
+  String get voiceOptionA;
+
+  /// No description provided for @voiceOptionB.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice B'**
+  String get voiceOptionB;
+
+  /// No description provided for @continueWithGoogle.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue with Google'**
+  String get continueWithGoogle;
+
+  /// No description provided for @googleNotConfigured.
+  ///
+  /// In en, this message translates to:
+  /// **'Google sign-in is not configured. Build with --dart-define=GOOGLE_SERVER_CLIENT_ID=your_web_client_id.'**
+  String get googleNotConfigured;
+
+  /// No description provided for @googleSignInFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Google sign-in failed'**
+  String get googleSignInFailed;
+
+  /// No description provided for @googleSignInCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign-in cancelled'**
+  String get googleSignInCancelled;
 }
 
 class _AppLocalizationsDelegate
