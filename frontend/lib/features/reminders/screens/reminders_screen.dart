@@ -24,11 +24,10 @@ class _RemindersScreenState extends State<RemindersScreen> {
   @override
   void initState() {
     super.initState();
-    ChatService().connect();
-    
-    // Only handle side-effects (OS notifications) in the listener, decoupled from UI rendering
+
     _notificationSub = ChatService().pendingRemindersStream.listen((data) {
       if (mounted) {
+        final loc = AppLocalizations.of(context)!;
         final currentTasks = data.map((e) => Task.fromJson(Map<String, dynamic>.from(e as Map))).toList();
         for (final task in currentTasks) {
           if (!task.isDone) {
@@ -39,7 +38,7 @@ class _RemindersScreenState extends State<RemindersScreen> {
             if (schedule != null) {
               NotificationService().scheduleReminderNotification(
                 mongoId: task.id,
-                title: 'Shizuki Task Alarm',
+                title: loc.notificationTaskTitle,
                 body: task.title,
                 time: schedule,
                 daysOfWeek: task.daysOfWeek,
@@ -50,6 +49,16 @@ class _RemindersScreenState extends State<RemindersScreen> {
       }
     });
 
+    _connectAndSyncReminders();
+  }
+
+  Future<void> _connectAndSyncReminders() async {
+    try {
+      await ChatService().connect();
+    } catch (e) {
+      debugPrint('[RemindersScreen] Socket connect failed: $e');
+    }
+    if (!mounted) return;
     ChatService().fetchPendingReminders();
   }
 

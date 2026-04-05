@@ -7,12 +7,12 @@ class AppStrings {
   AppStrings._();
 
   // ── App ──────────────────────────────────────────────────────────────────
-  static const appName    = 'Mora AI';
+  static const appName    = 'Shizuki AI';
   static const appVersion = 'v2.5.0';
 
   // ── Start Screen ─────────────────────────────────────────────────────────
   static const systemOnline  = '◆ SYSTEM ONLINE ◆';
-  static const moraTitle     = 'MORA';
+  static const moraTitle     = 'SHIZUKI';
   static const subtitle      = 'VIRTUAL ASSISTANT';
   static const tapToStart    = '◆ TAP TO START ◆';
   static const startCaption  = 'Your cute AI companion awaits ✦';
@@ -20,7 +20,7 @@ class AppStrings {
   // ── Auth ─────────────────────────────────────────────────────────────────
   static const welcomeBack         = 'WELCOME BACK';
   static const loginSubtitle       = 'Sign in to continue your journey ✦';
-  static const joinMora            = 'JOIN MORA';
+  static const joinMora            = 'JOIN SHIZUKI';
   static const signupSubtitle      = 'Create your new account ✦';
   static const logIn               = 'LOG IN';
   static const signUp              = 'SIGN UP';

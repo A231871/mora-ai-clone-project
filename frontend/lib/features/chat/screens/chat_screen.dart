@@ -13,7 +13,7 @@ import '../../../shared/widgets/grid_background.dart';
 import '../../../shared/widgets/mecha_app_bar.dart';
 import '../../../core/providers/language_provider.dart';
 
-enum MoraState { idle, thinking, talking }
+enum ShizukiChatPhase { idle, thinking, talking }
 
 class ChatScreen extends ConsumerStatefulWidget {
   const ChatScreen({super.key});
@@ -30,7 +30,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   final VoiceService _voiceService = VoiceService();
   final List<Map<String, dynamic>> _messages =[];
 
-  MoraState _moraState = MoraState.idle;
+  ShizukiChatPhase _phase = ShizukiChatPhase.idle;
   Timer? _talkingTimer;
   StreamSubscription<List<dynamic>>? _historySub;
   StreamSubscription<Map<String, dynamic>>? _messageSub;
@@ -42,21 +42,19 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   @override
   void initState() {
     super.initState();
-    
+
     _voiceService.init();
-    _chatService.connect();
-    
-    // LOGIC FIX: Always setup listeners BEFORE fetching data. 
-    // Otherwise, if the data is fetched instantly, you will miss the event!
+
+    // Setup listeners before any async connect so we never miss chat:history_loaded.
     _historySub = _chatService.historyStream.listen((historyList) {
       if (mounted) {
         setState(() {
           _messages.clear();
           for (var msg in historyList) {
             _messages.add({
-               'sender': msg['role'] == 'user' ? 'User' : 'Mora',
-               'message': msg['content'],
-               'timestamp': msg['timestamp']
+              'sender': msg['role'] == 'user' ? 'User' : 'Mora',
+              'message': msg['content'],
+              'timestamp': msg['timestamp'],
             });
           }
         });
@@ -67,9 +65,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     _messageSub = _chatService.messageStream.listen((messageData) {
       if (mounted) {
         setState(() {
-          _messages.add(messageData); 
+          _messages.add(messageData);
           if (messageData['sender'] == 'Shizuki') {
-            _moraState = MoraState.talking;
+            _phase = ShizukiChatPhase.talking;
             _startTalkingTimer();
             final langCode = ref.read(languageProvider).languageCode;
             _voiceService.speak(messageData['message'], languageCode: langCode);
@@ -83,12 +81,12 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       if (mounted) {
         setState(() {
           if (isTyping) {
-            _moraState = MoraState.thinking;
+            _phase = ShizukiChatPhase.thinking;
             _talkingTimer?.cancel();
           } else {
-             if (_moraState == MoraState.thinking) {
-                 _moraState = MoraState.idle; 
-             }
+            if (_phase == ShizukiChatPhase.thinking) {
+              _phase = ShizukiChatPhase.idle;
+            }
           }
         });
       }
@@ -108,7 +106,16 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       }
     });
 
-    // Now that listeners are ready, fetch the history.
+    _connectAndLoadHistory();
+  }
+
+  Future<void> _connectAndLoadHistory() async {
+    try {
+      await _chatService.connect();
+    } catch (e) {
+      debugPrint('[ChatScreen] Socket connect failed: $e');
+    }
+    if (!mounted) return;
     _chatService.fetchHistory();
   }
 
@@ -127,9 +134,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   void _startTalkingTimer() {
     _talkingTimer?.cancel();
     _talkingTimer = Timer(const Duration(seconds: 4), () {
-      if (mounted && _moraState == MoraState.talking) {
+      if (mounted && _phase == ShizukiChatPhase.talking) {
         setState(() {
-          _moraState = MoraState.idle;
+          _phase = ShizukiChatPhase.idle;
         });
       }
     });
@@ -146,6 +153,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   }
 
   void _clearHistory() {
+    final loc = AppLocalizations.of(context)!;
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -153,16 +161,16 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         shape: RoundedRectangleBorder(
             side: const BorderSide(color: Colors.redAccent, width: 2),
             borderRadius: BorderRadius.circular(AppSpacing.md)),
-        title: const Text('CLEAR MEMORY CORE?',
-            style: TextStyle(fontFamily: 'Orbitron', color: Colors.redAccent)),
-        content: const Text(
-          'Are you sure you want to permanently delete all chat history? This action cannot be undone.',
+        title: Text(loc.clearMemoryTitle,
+            style: const TextStyle(fontFamily: 'Orbitron', color: Colors.redAccent)),
+        content: Text(
+          loc.clearMemoryBody,
           style: AppTextStyles.bodyMedium,
         ),
         actions:[
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text('CANCEL', style: AppTextStyles.buttonLabel.copyWith(color: AppColors.textSecondary)),
+            child: Text(loc.actionCancel, style: AppTextStyles.buttonLabel.copyWith(color: AppColors.textSecondary)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
@@ -173,7 +181,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 _messages.clear();
               });
             },
-            child: const Text('DELETE', style: AppTextStyles.buttonLabel),
+            child: Text(loc.actionDelete, style: AppTextStyles.buttonLabel),
           ),
         ],
       ),

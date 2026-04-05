@@ -32,9 +32,24 @@ class ChatService {
   Stream<List<dynamic>> get pendingRemindersStream => _pendingRemindersController.stream;
   List<dynamic> currentReminders =[];
 
+  Future<void>? _connectFuture;
+
+  /// Completes when the socket is connected (or immediately if already connected).
+  /// Callers should subscribe to streams before `await connect()` so they do not miss payloads.
   Future<void> connect() async {
     if (_socket != null && _socket!.connected) return;
 
+    if (_connectFuture != null) return _connectFuture!;
+
+    _connectFuture = _connectOnce();
+    try {
+      await _connectFuture;
+    } finally {
+      _connectFuture = null;
+    }
+  }
+
+  Future<void> _connectOnce() async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('jwt_token');
 
@@ -45,51 +60,60 @@ class ChatService {
 
     debugPrint("[ChatService] Connecting to WebSocket...");
 
+    final completer = Completer<void>();
+
     _socket = io.io(
       ApiConstants.socketUrl,
       io.OptionBuilder()
           .setTransports(['websocket'])
           .disableAutoConnect()
-          .enableForceNew() // LOGIC FIX: Prevents duplicate listeners and cached socket bugs on logout/login
+          .enableForceNew()
           .setAuth({'token': token})
           .build(),
     );
 
+    _registerSocketHandlers(completer);
     _socket!.connect();
 
+    try {
+      await completer.future.timeout(const Duration(seconds: 25));
+    } catch (e, st) {
+      debugPrint("[ChatService] Connect failed: $e\n$st");
+      disconnect();
+      rethrow;
+    }
+  }
+
+  void _registerSocketHandlers(Completer<void> connectCompleter) {
     _socket!.onConnect((_) {
       debugPrint("[ChatService] Connected to Server successfully");
-      
-      // FETCH HISTORY AUTOMATICALLY THE MOMENT WE CONNECT!
-      _socket!.emit('chat:fetch_history');
-    });
-
-    // Listen for history payload
-    _socket!.on('chat:history_loaded', (data) {
-      _historyController.add(List<dynamic>.from(data));
+      if (!connectCompleter.isCompleted) connectCompleter.complete();
     });
 
     _socket!.onConnectError((err) {
       debugPrint("[ChatService] Connection Error: $err");
+      if (!connectCompleter.isCompleted) {
+        connectCompleter.completeError(err ?? 'WebSocket connection error');
+      }
     });
 
-    // Listen for AI replies
+    _socket!.on('chat:history_loaded', (data) {
+      _historyController.add(List<dynamic>.from(data));
+    });
+
     _socket!.on('chat:receive', (data) {
       _messageController.add(Map<String, dynamic>.from(data));
     });
 
-    // Listen for typing indicator
     _socket!.on('chat:typing', (data) {
       final isTyping = data['status'] ?? false;
       _typingController.add(isTyping);
     });
 
-    // Listen for proactive scheduled alerts
     _socket!.on('system:alert', (data) {
       _systemAlertController.add(data['message']);
     });
 
-    // Listen for mission logs loaded
     _socket!.on('reminder:pending_loaded', (data) {
       if (data != null) {
         currentReminders = List<dynamic>.from(data);

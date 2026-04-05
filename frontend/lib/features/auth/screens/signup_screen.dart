@@ -33,16 +33,18 @@ class _SignupScreenState extends State<SignupScreen> {
   }
 
   Future<void> _submit() async {
+    final loc = AppLocalizations.of(context)!;
+
     if (_usernameController.text.isEmpty || _passwordController.text.isEmpty || _confirmPasswordController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill in all fields', style: TextStyle(color: Colors.redAccent))),
+        SnackBar(content: Text(loc.fillAllFields, style: const TextStyle(color: Colors.redAccent))),
       );
       return;
     }
 
     if (_passwordController.text != _confirmPasswordController.text) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Passwords do not match', style: TextStyle(color: Colors.redAccent))),
+        SnackBar(content: Text(loc.passwordsDoNotMatch, style: const TextStyle(color: Colors.redAccent))),
       );
       return;
     }
@@ -50,8 +52,8 @@ class _SignupScreenState extends State<SignupScreen> {
     final passwordRegex = RegExp(r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W]).{8,}$');
     if (!passwordRegex.hasMatch(_passwordController.text)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Password must contain upper/lower, number, and special char (min 8 chars)', style: TextStyle(color: Colors.redAccent)),
+        SnackBar(
+          content: Text(loc.passwordRulesHint, style: const TextStyle(color: Colors.redAccent)),
           backgroundColor: AppColors.bgCard,
         ),
       );
@@ -75,9 +77,9 @@ class _SignupScreenState extends State<SignupScreen> {
 
     if (result['success']) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Registration successful! Please log in.', style: TextStyle(color: Colors.greenAccent))),
+        SnackBar(content: Text(loc.registrationSuccess, style: const TextStyle(color: Colors.greenAccent))),
       );
-      context.go('/'); // Explicit route instead of context.pop() due to go_router stack
+      context.go('/');
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(result['message'] ?? 'Registration failed', style: const TextStyle(color: Colors.redAccent))),
@@ -155,7 +157,9 @@ class _SignupScreenState extends State<SignupScreen> {
                   const SizedBox(height: AppSpacing.lg),
 
                   // ── SIGN UP / LOG IN tabs ─────────────────────────────
-                  _SignupTabs(onLogInTap: _isLoading ? () {} : () => context.go('/')),
+                  _SignupTabs(
+                    onLogInTap: _isLoading ? () {} : () => context.go('/'),
+                  ),
 
                   const SizedBox(height: AppSpacing.lg),
 
@@ -174,8 +178,8 @@ class _SignupScreenState extends State<SignupScreen> {
                   ),
                   const SizedBox(height: AppSpacing.md),
                   MechaTextField(
-                    label: 'Confirm Password',
-                    hint: 'Re-enter your password',
+                    label: AppLocalizations.of(context)!.confirmPasswordLabel,
+                    hint: AppLocalizations.of(context)!.confirmPasswordPlaceholder,
                     isPassword: true,
                     controller: _confirmPasswordController,
                   ),
@@ -184,7 +188,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
                   // ── CREATE ACCOUNT button ─────────────────────────────
                   MechaButton(
-                    label: _isLoading ? 'Creating...' : AppLocalizations.of(context)!.createAccount,
+                    label: _isLoading ? AppLocalizations.of(context)!.creatingAccount : AppLocalizations.of(context)!.createAccount,
                     onTap: _isLoading ? () {} : _submit,
                   ),
 
@@ -215,6 +219,7 @@ class _SignupTabs extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
     return Container(
       decoration: BoxDecoration(
         color: AppColors.bgCard,
@@ -226,8 +231,8 @@ class _SignupTabs extends StatelessWidget {
       ),
       child: Row(
         children:[
-          _tab('LOG IN', isActive: false, onTap: onLogInTap),
-          _tab('SIGN UP', isActive: true, onTap: () {}),
+          _tab(loc.logIn, isActive: false, onTap: onLogInTap),
+          _tab(loc.signUp, isActive: true, onTap: () {}),
         ],
       ),
     );

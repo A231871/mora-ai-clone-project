@@ -52,6 +52,7 @@ dependencies:
   intl: ^0.20.2
   flutter_riverpod: ^3.3.1
   hooks_riverpod: ^3.3.1
+  google_sign_in: ^6.2.2
 
 dev_dependencies:
   flutter_test:
@@ -72,6 +73,8 @@ flutter:
     - assets/icons/
     - assets/sounds/
     - assets/bg_grid.png
+    # Rigged mascot (Live2D/Spine/Rive): when you export for Flutter, add the folder here, e.g.:
+    # - assets/Shizuke_App_Model/
 
   fonts:
     - family: Orbitron

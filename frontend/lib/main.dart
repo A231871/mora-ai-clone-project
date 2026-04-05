@@ -11,18 +11,18 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await NotificationService().init();
   await NotificationService().requestPermissions();
-  runApp(const ProviderScope(child: MoraAiApp()));
+  runApp(const ProviderScope(child: ShizukiApp()));
 }
 
-class MoraAiApp extends ConsumerWidget {
-  const MoraAiApp({super.key});
+class ShizukiApp extends ConsumerWidget {
+  const ShizukiApp({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final currentLocale = ref.watch(languageProvider);
 
     return MaterialApp.router(
-      title: 'Mora AI Companion',
+      title: 'Shizuki AI',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.mechaTheme,
       routerConfig: AppRouter.router,

@@ -8,6 +8,7 @@ import '../../../shared/widgets/grid_background.dart';
 import '../../../shared/widgets/mecha_button.dart';
 import '../../../shared/widgets/mecha_text_field.dart';
 import '../../../shared/widgets/shizuki_animator.dart';
+import '../../../core/config/google_sign_in_config.dart';
 import '../services/auth_service.dart';
 
 // ── Login screen with full backend AuthService + Shizuki avatar UI ─────────────
@@ -36,9 +37,11 @@ class _LoginScreenState extends State<LoginScreen> {
   final AuthService _authService = AuthService();
 
   Future<void> _submit() async {
+    final loc = AppLocalizations.of(context)!;
+
     if (_usernameController.text.isEmpty || _passwordController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill in both fields', style: TextStyle(color: Colors.redAccent))),
+        SnackBar(content: Text(loc.fillBothFields, style: const TextStyle(color: Colors.redAccent))),
       );
       return;
     }
@@ -62,7 +65,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (result['success']) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Welcome to Mora A.I Interface!', style: TextStyle(color: Colors.greenAccent))),
+        SnackBar(content: Text(loc.welcomeShizukiLogin, style: const TextStyle(color: Colors.greenAccent))),
       );
       context.go('/home');
     } else {
@@ -70,6 +73,56 @@ class _LoginScreenState extends State<LoginScreen> {
         SnackBar(content: Text(result['message'] ?? 'Login failed', style: const TextStyle(color: Colors.redAccent))),
       );
     }
+  }
+
+  Future<void> _signInWithGoogle() async {
+    final loc = AppLocalizations.of(context)!;
+
+    if (!GoogleSignInConfig.isConfigured) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(loc.googleNotConfigured, style: const TextStyle(color: Colors.cyanAccent)),
+          backgroundColor: AppColors.bgCard,
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _currentEmotion = ShizukiEmotion.talk;
+    });
+
+    final result = await _authService.signInWithGoogle();
+
+    if (!mounted) return;
+
+    setState(() {
+      _isLoading = false;
+    });
+
+    if (result['success'] == true) {
+      setState(() => _currentEmotion = ShizukiEmotion.smile);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(loc.welcomeShizukiLogin, style: const TextStyle(color: Colors.greenAccent))),
+      );
+      context.go('/home');
+      return;
+    }
+
+    final code = result['message'] as String?;
+    if (code == 'cancelled') {
+      setState(() => _currentEmotion = ShizukiEmotion.smile);
+      return;
+    }
+
+    setState(() => _currentEmotion = ShizukiEmotion.sad);
+    final msg = code == 'not_configured'
+        ? loc.googleNotConfigured
+        : (code == 'no_id_token' ? loc.googleSignInFailed : (result['message']?.toString() ?? loc.googleSignInFailed));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(msg, style: const TextStyle(color: Colors.redAccent))),
+    );
   }
 
   @override
@@ -165,14 +218,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   Align(
                     alignment: Alignment.centerRight,
                     child: GestureDetector(
-                      onTap: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                              content: Text('Please login via Google', style: TextStyle(color: Colors.cyanAccent)),
-                              backgroundColor: AppColors.bgCard,
-                          ),
-                        );
-                      },
+                      onTap: _isLoading ? null : _signInWithGoogle,
                       child: Text(AppLocalizations.of(context)!.forgotPassword, style: AppTextStyles.caption.copyWith(decoration: TextDecoration.underline)),
                     ),
                   ),
@@ -181,12 +227,20 @@ class _LoginScreenState extends State<LoginScreen> {
 
                   // ── LOG IN button ─────────────────────────────────────
                   MechaButton(
-                    label: _isLoading ? 'Logging in...' : AppLocalizations.of(context)!.logIn,
+                    label: _isLoading ? AppLocalizations.of(context)!.loggingIn : AppLocalizations.of(context)!.logIn,
                     onTap: _isLoading ? () {} : _submit,
                   ),
 
                   const SizedBox(height: AppSpacing.md),
                   Text(AppLocalizations.of(context)!.orDivider, style: AppTextStyles.caption),
+                  const SizedBox(height: AppSpacing.md),
+
+                  MechaButton(
+                    label: AppLocalizations.of(context)!.continueWithGoogle,
+                    variant: MechaButtonVariant.outlined,
+                    onTap: _isLoading ? () {} : _signInWithGoogle,
+                  ),
+
                   const SizedBox(height: AppSpacing.md),
 
                   // ── CREATE ACCOUNT button ─────────────────────────────

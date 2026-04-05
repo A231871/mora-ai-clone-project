@@ -28,45 +28,12 @@ class _ConfigScreenState extends ConsumerState<ConfigScreen> {
   final AudioService _audioService = AudioService();
 
   final Map<String, bool> _togglesStates = {
-    'darkMode':       true,
-    'notifications':  true,
-    'shizukiVoice':    true,
+    'darkMode': true,
+    'notifications': true,
+    'shizukiVoice': true,
     'hapticFeedback': false,
-    'privacyShield':  true,
+    'privacyShield': true,
   };
-
-  final List<Map<String, dynamic>> _toggles =[
-    {
-      'id': 'darkMode',
-      'title': 'Dark Mode',
-      'sub': 'System-wide dark appearance',
-      'icon': Icons.dark_mode,
-    },
-    {
-      'id': 'notifications',
-      'title': 'Notifications',
-      'sub': 'Allow push notifications',
-      'icon': Icons.notifications,
-    },
-    {
-      'id': 'shizukiVoice',
-      'title': 'Shizuki Voice',
-      'sub': 'Voice assistant responses',
-      'icon': Icons.record_voice_over,
-    },
-    {
-      'id': 'hapticFeedback',
-      'title': 'Haptic Feedback',
-      'sub': 'Vibrate on interactions',
-      'icon': Icons.vibration,
-    },
-    {
-      'id': 'privacyShield',
-      'title': 'Privacy Shield',
-      'sub': 'Limit data tracking',
-      'icon': Icons.security,
-    },
-  ];
 
   @override
   void initState() {
@@ -76,6 +43,7 @@ class _ConfigScreenState extends ConsumerState<ConfigScreen> {
   }
 
   void _showLogoutDialog(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
     showDialog(
       context: context,
       builder: (BuildContext dialogContext) {
@@ -89,33 +57,32 @@ class _ConfigScreenState extends ConsumerState<ConfigScreen> {
             children:[
               const Icon(Icons.warning_amber_rounded, color: Colors.redAccent, size: 28),
               const SizedBox(width: AppSpacing.sm),
-              // ADDED EXPANDED HERE TO FIX THE ROW OVERFLOW
               Expanded(
                 child: FittedBox(
                   fit: BoxFit.scaleDown,
                   alignment: Alignment.centerLeft,
                   child: Text(
-                    'SYSTEM DISCONNECT',
+                    loc.logoutDialogTitle,
                     style: AppTextStyles.titleLarge.copyWith(color: Colors.redAccent),
                   ),
                 ),
               ),
             ],
           ),
-          content: const Text(
-            'Are you sure you want to disconnect?\nActive session will be terminated.',
+          content: Text(
+            loc.logoutDialogBody,
             style: AppTextStyles.bodyMedium,
           ),
           actions:[
             TextButton(
               onPressed: () => Navigator.pop(dialogContext),
-              child: Text('CANCEL', style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary)),
+              child: Text(loc.actionCancel, style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary)),
             ),
             MechaButton(
-              label: 'DISCONNECT',
+              label: loc.actionDisconnect,
               onTap: () {
-                Navigator.pop(dialogContext); // dismiss dialog
-                context.go('/'); // wipe session & route to login
+                Navigator.pop(dialogContext);
+                context.go('/');
               },
             ),
           ],
@@ -141,7 +108,7 @@ class _ConfigScreenState extends ConsumerState<ConfigScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children:[
                 // ── LANGUAGE SELECTION ─────────────────────────────────
-                const _SectionLabel('LANGUAGE / NGÔN NGỮ'),
+                _SectionLabel(loc.languageSectionLabel),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
                   decoration: BoxDecoration(
@@ -152,7 +119,7 @@ class _ConfigScreenState extends ConsumerState<ConfigScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children:[
-                      const Text('System Language', style: AppTextStyles.titleMedium),
+                      Text(loc.systemLanguageLabel, style: AppTextStyles.titleMedium),
                       SegmentedButton<String>(
                         segments: const[
                           ButtonSegment(value: 'en', label: Text('EN')),
@@ -229,12 +196,10 @@ class _ConfigScreenState extends ConsumerState<ConfigScreen> {
                         dropdownColor: AppColors.bgCard,
                         underline: const SizedBox(),
                         style: AppTextStyles.bodyMedium,
-                        items:['Voice A', 'Voice B']
-                            .map((v) => DropdownMenuItem(
-                                  value: v,
-                                  child: Text(v),
-                                ))
-                            .toList(),
+                        items:[
+                      DropdownMenuItem(value: 'Voice A', child: Text(loc.voiceOptionA)),
+                      DropdownMenuItem(value: 'Voice B', child: Text(loc.voiceOptionB)),
+                    ],
                         onChanged: (v) =>
                             setState(() => _selectedVoice = v ?? _selectedVoice),
                       ),
@@ -247,14 +212,13 @@ class _ConfigScreenState extends ConsumerState<ConfigScreen> {
                 // ── SYSTEM CONTROLS ────────────────────────────────────
                 _SectionLabel(loc.systemControls),
 
-                ..._toggles.map((t) => _ToggleCard(
-                      key: ValueKey(t['id'] as String),
-                      title: t['title'] as String,
-                      subtitle: t['sub'] as String,
-                      icon: t['icon'] as IconData,
-                      value: _togglesStates[t['id'] as String] ?? false,
-                      onChanged: (v) =>
-                          setState(() => _togglesStates[t['id'] as String] = v),
+                ..._toggleDefinitions(loc).map((t) => _ToggleCard(
+                      key: ValueKey(t.id),
+                      title: t.title,
+                      subtitle: t.subtitle,
+                      icon: t.icon,
+                      value: _togglesStates[t.id] ?? false,
+                      onChanged: (v) => setState(() => _togglesStates[t.id] = v),
                     )),
 
                 const SizedBox(height: AppSpacing.xl),
@@ -281,6 +245,29 @@ class _ConfigScreenState extends ConsumerState<ConfigScreen> {
       ),
     );
   }
+
+  List<_ToggleDef> _toggleDefinitions(AppLocalizations loc) {
+    return [
+      _ToggleDef(id: 'darkMode', title: loc.darkMode, subtitle: loc.darkModeSub, icon: Icons.dark_mode),
+      _ToggleDef(id: 'notifications', title: loc.notifications, subtitle: loc.notificationsSub, icon: Icons.notifications),
+      _ToggleDef(id: 'shizukiVoice', title: loc.shizukiVoice, subtitle: loc.shizukiVoiceSub, icon: Icons.record_voice_over),
+      _ToggleDef(id: 'hapticFeedback', title: loc.hapticFeedback, subtitle: loc.hapticSub, icon: Icons.vibration),
+      _ToggleDef(id: 'privacyShield', title: loc.privacyShield, subtitle: loc.privacySub, icon: Icons.security),
+    ];
+  }
+}
+
+class _ToggleDef {
+  const _ToggleDef({
+    required this.id,
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+  });
+  final String id;
+  final String title;
+  final String subtitle;
+  final IconData icon;
 }
 
 // ── Section label ──────────────────────────────────────────────────────────────
