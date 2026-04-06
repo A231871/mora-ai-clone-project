@@ -1,9 +1,12 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/config/google_sign_in_config.dart';
 import '../../../core/constants/api_constants.dart';
+import '../models/google_sign_in_result.dart';
 
 class AuthService {
   static const String _tokenKey = 'jwt_token';
@@ -33,7 +36,8 @@ class AuthService {
   }
 
   // Register Method
-  Future<Map<String, dynamic>> register(String username, String password) async {
+  Future<Map<String, dynamic>> register(
+      String username, String password) async {
     try {
       final response = await http.post(
         Uri.parse(ApiConstants.registerEndpoint),
@@ -46,7 +50,10 @@ class AuthService {
       if (response.statusCode == 201) {
         return {'success': true, 'message': 'Registration successful'};
       } else {
-        return {'success': false, 'message': data['error'] ?? 'Registration failed'};
+        return {
+          'success': false,
+          'message': data['error'] ?? 'Registration failed'
+        };
       }
     } catch (e) {
       return {'success': false, 'message': 'Network error: $e'};
@@ -65,26 +72,41 @@ class AuthService {
     await prefs.remove(_tokenKey);
   }
 
-  Future<Map<String, dynamic>> signInWithGoogle() async {
-    if (!GoogleSignInConfig.isConfigured) {
-      return {'success': false, 'message': 'not_configured'};
-    }
-
+  Future<GoogleSignInResult> signInWithGoogle() async {
+    final config = GoogleSignInConfigSnapshot.current();
     try {
       final googleSignIn = GoogleSignIn(
         scopes: ['email', 'profile'],
-        serverClientId: GoogleSignInConfig.serverClientId,
+        serverClientId: GoogleSignInConfig.serverClientIdOrNull,
       );
 
       final account = await googleSignIn.signIn();
       if (account == null) {
-        return {'success': false, 'message': 'cancelled'};
+        return GoogleSignInResult.failure(
+          failure: const GoogleSignInFailure(
+            code: GoogleSignInFailureCode.cancelled,
+            message: 'cancelled',
+          ),
+        );
       }
 
       final auth = await account.authentication;
       final idToken = auth.idToken;
       if (idToken == null || idToken.isEmpty) {
-        return {'success': false, 'message': 'no_id_token'};
+        final code = config.hasExplicitServerClientId
+            ? GoogleSignInFailureCode.noIdToken
+            : GoogleSignInFailureCode.missingClientConfiguration;
+        return GoogleSignInResult.failure(
+          failure: GoogleSignInFailure(
+            code: code,
+            message: 'no_id_token',
+            diagnostics: _buildDiagnostics(
+              config,
+              rawMessage:
+                  'Google authentication completed without an ID token.',
+            ),
+          ),
+        );
       }
 
       final response = await http.post(
@@ -98,15 +120,129 @@ class AuthService {
       if (response.statusCode == 200 && data['token'] != null) {
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString(_tokenKey, data['token'] as String);
-        return {'success': true, 'message': 'Login successful'};
+        return const GoogleSignInResult.success(message: 'Login successful');
       }
 
-      return {
-        'success': false,
-        'message': data['error'] ?? 'Google login failed',
-      };
-    } catch (e) {
-      return {'success': false, 'message': 'Network error: $e'};
+      return GoogleSignInResult.failure(
+        failure: GoogleSignInFailure(
+          code: GoogleSignInFailureCode.backendRejected,
+          message: data['error']?.toString() ?? 'Google login failed',
+          diagnostics: _buildDiagnostics(
+            config,
+            rawMessage: data['error']?.toString(),
+          ),
+        ),
+      );
+    } on PlatformException catch (error) {
+      return GoogleSignInResult.failure(
+        failure: _classifyPlatformFailure(error, config),
+      );
+    } on SocketException catch (error) {
+      return GoogleSignInResult.failure(
+        failure: GoogleSignInFailure(
+          code: GoogleSignInFailureCode.networkError,
+          message: 'Network error: $error',
+          rawMessage: error.message,
+          diagnostics: _buildDiagnostics(
+            config,
+            platformCode: GoogleSignIn.kNetworkError,
+            rawMessage: error.message,
+          ),
+        ),
+      );
+    } catch (error) {
+      return GoogleSignInResult.failure(
+        failure: GoogleSignInFailure(
+          code: GoogleSignInFailureCode.unexpected,
+          message: 'Unexpected error: $error',
+          rawMessage: error.toString(),
+          diagnostics: _buildDiagnostics(
+            config,
+            rawMessage: error.toString(),
+          ),
+        ),
+      );
     }
+  }
+
+  GoogleSignInFailure _classifyPlatformFailure(
+    PlatformException error,
+    GoogleSignInConfigSnapshot config,
+  ) {
+    final rawMessage = error.message ?? error.toString();
+    final statusCode = _extractApiStatusCode(rawMessage);
+    final diagnostics = _buildDiagnostics(
+      config,
+      platformCode: error.code,
+      apiStatus: statusCode?.toString(),
+      rawMessage: rawMessage,
+    );
+
+    switch (error.code) {
+      case GoogleSignIn.kSignInCanceledError:
+        return GoogleSignInFailure(
+          code: GoogleSignInFailureCode.cancelled,
+          message: 'cancelled',
+          rawMessage: rawMessage,
+          diagnostics: diagnostics,
+        );
+      case GoogleSignIn.kNetworkError:
+        return GoogleSignInFailure(
+          code: GoogleSignInFailureCode.networkError,
+          message: 'network_error',
+          rawMessage: rawMessage,
+          diagnostics: diagnostics,
+        );
+      case GoogleSignIn.kSignInFailedError:
+        if (statusCode == 10) {
+          return GoogleSignInFailure(
+            code: GoogleSignInFailureCode.androidDeveloperError,
+            message: 'android_developer_error',
+            rawMessage: rawMessage,
+            diagnostics: diagnostics,
+          );
+        }
+
+        return GoogleSignInFailure(
+          code: GoogleSignInFailureCode.signInFailed,
+          message: 'sign_in_failed',
+          rawMessage: rawMessage,
+          diagnostics: diagnostics,
+        );
+      default:
+        return GoogleSignInFailure(
+          code: GoogleSignInFailureCode.unexpected,
+          message: error.code,
+          rawMessage: rawMessage,
+          diagnostics: diagnostics,
+        );
+    }
+  }
+
+  Map<String, String> _buildDiagnostics(
+    GoogleSignInConfigSnapshot config, {
+    String? platformCode,
+    String? apiStatus,
+    String? rawMessage,
+  }) {
+    return <String, String>{
+      'androidPackage': config.androidPackageName,
+      'serverClientId': config.serverClientIdDisplay,
+      'serverClientIdSource': config.hasExplicitServerClientId
+          ? 'dart-define GOOGLE_SERVER_CLIENT_ID'
+          : 'native default_web_client_id fallback',
+      if (platformCode != null && platformCode.isNotEmpty)
+        'platformCode': platformCode,
+      if (apiStatus != null && apiStatus.isNotEmpty) 'apiStatus': apiStatus,
+      if (rawMessage != null && rawMessage.isNotEmpty) 'rawMessage': rawMessage,
+    };
+  }
+
+  int? _extractApiStatusCode(String rawMessage) {
+    final match = RegExp(r'ApiException:\s*(\d+)').firstMatch(rawMessage);
+    if (match == null) {
+      return null;
+    }
+    return int.tryParse(match.group(1)!);
   }
 }

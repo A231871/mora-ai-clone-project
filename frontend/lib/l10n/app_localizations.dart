@@ -272,6 +272,150 @@ abstract class AppLocalizations {
   /// **'— QUICK ACCESS —'**
   String get quickAccess;
 
+  /// No description provided for @shizukiGreetingWarm.
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome back~ I kept your console cozy for you.'**
+  String get shizukiGreetingWarm;
+
+  /// No description provided for @shizukiGreetingReady.
+  ///
+  /// In en, this message translates to:
+  /// **'Systems are synced. I\'m ready when you are.'**
+  String get shizukiGreetingReady;
+
+  /// No description provided for @shizukiTouchHair1.
+  ///
+  /// In en, this message translates to:
+  /// **'Careful~ My hair takes forever to behave.'**
+  String get shizukiTouchHair1;
+
+  /// No description provided for @shizukiTouchHair2.
+  ///
+  /// In en, this message translates to:
+  /// **'Hehe, a headpat? I can allow that.'**
+  String get shizukiTouchHair2;
+
+  /// No description provided for @shizukiTouchHead1.
+  ///
+  /// In en, this message translates to:
+  /// **'You found my focus point.'**
+  String get shizukiTouchHead1;
+
+  /// No description provided for @shizukiTouchHead2.
+  ///
+  /// In en, this message translates to:
+  /// **'My thoughts get all sparkly when you tap there.'**
+  String get shizukiTouchHead2;
+
+  /// No description provided for @shizukiTouchFace1.
+  ///
+  /// In en, this message translates to:
+  /// **'That\'s close. I\'m paying attention~'**
+  String get shizukiTouchFace1;
+
+  /// No description provided for @shizukiTouchFace2.
+  ///
+  /// In en, this message translates to:
+  /// **'Eyes up here, commander.'**
+  String get shizukiTouchFace2;
+
+  /// No description provided for @shizukiTouchChest1.
+  ///
+  /// In en, this message translates to:
+  /// **'Easy there~ personal space still exists.'**
+  String get shizukiTouchChest1;
+
+  /// No description provided for @shizukiTouchChest2.
+  ///
+  /// In en, this message translates to:
+  /// **'That area is a little sensitive, okay?'**
+  String get shizukiTouchChest2;
+
+  /// No description provided for @shizukiTouchTorso1.
+  ///
+  /// In en, this message translates to:
+  /// **'Steady touch detected. I\'m okay.'**
+  String get shizukiTouchTorso1;
+
+  /// No description provided for @shizukiTouchTorso2.
+  ///
+  /// In en, this message translates to:
+  /// **'You always find the center of gravity, huh?'**
+  String get shizukiTouchTorso2;
+
+  /// No description provided for @shizukiTouchArms1.
+  ///
+  /// In en, this message translates to:
+  /// **'Arms online. Want me to help with something?'**
+  String get shizukiTouchArms1;
+
+  /// No description provided for @shizukiTouchArms2.
+  ///
+  /// In en, this message translates to:
+  /// **'A gentle tap there feels surprisingly grounding.'**
+  String get shizukiTouchArms2;
+
+  /// No description provided for @shizukiTouchHands1.
+  ///
+  /// In en, this message translates to:
+  /// **'Holding hands would be less glitchy than poking.'**
+  String get shizukiTouchHands1;
+
+  /// No description provided for @shizukiTouchHands2.
+  ///
+  /// In en, this message translates to:
+  /// **'My hands are free if you need backup.'**
+  String get shizukiTouchHands2;
+
+  /// No description provided for @shizukiTouchThighs1.
+  ///
+  /// In en, this message translates to:
+  /// **'That\'s lower than I expected.'**
+  String get shizukiTouchThighs1;
+
+  /// No description provided for @shizukiTouchThighs2.
+  ///
+  /// In en, this message translates to:
+  /// **'Commander, that\'s a bold touch zone.'**
+  String get shizukiTouchThighs2;
+
+  /// No description provided for @shizukiTouchLegs1.
+  ///
+  /// In en, this message translates to:
+  /// **'Balance check passed.'**
+  String get shizukiTouchLegs1;
+
+  /// No description provided for @shizukiTouchLegs2.
+  ///
+  /// In en, this message translates to:
+  /// **'Leg servos are still stable, thanks for checking.'**
+  String get shizukiTouchLegs2;
+
+  /// No description provided for @shizukiTouchFeet1.
+  ///
+  /// In en, this message translates to:
+  /// **'Hey~ That\'s my footing.'**
+  String get shizukiTouchFeet1;
+
+  /// No description provided for @shizukiTouchFeet2.
+  ///
+  /// In en, this message translates to:
+  /// **'Feet ping received. I won\'t topple over.'**
+  String get shizukiTouchFeet2;
+
+  /// No description provided for @shizukiTouchGeneric1.
+  ///
+  /// In en, this message translates to:
+  /// **'I felt that. What do you need?'**
+  String get shizukiTouchGeneric1;
+
+  /// No description provided for @shizukiTouchGeneric2.
+  ///
+  /// In en, this message translates to:
+  /// **'Touch input received. I\'m listening.'**
+  String get shizukiTouchGeneric2;
+
   /// No description provided for @chat.
   ///
   /// In en, this message translates to:
@@ -607,6 +751,72 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Sign-in cancelled'**
   String get googleSignInCancelled;
+
+  /// No description provided for @googleSignInNetworkIssue.
+  ///
+  /// In en, this message translates to:
+  /// **'Network issue while contacting Google. Check connectivity and try again.'**
+  String get googleSignInNetworkIssue;
+
+  /// No description provided for @googleSignInConfigTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Android Google Sign-In needs setup'**
+  String get googleSignInConfigTitle;
+
+  /// No description provided for @googleSignInDeveloperError.
+  ///
+  /// In en, this message translates to:
+  /// **'Google Play Services returned developer error ApiException 10. This usually means the Android OAuth client, package name, signing SHA, or web client ID does not match this app build.'**
+  String get googleSignInDeveloperError;
+
+  /// No description provided for @googleSignInMissingIdToken.
+  ///
+  /// In en, this message translates to:
+  /// **'Google sign-in completed, but no ID token was returned for backend login.'**
+  String get googleSignInMissingIdToken;
+
+  /// No description provided for @googleSignInChecklist.
+  ///
+  /// In en, this message translates to:
+  /// **'Check these items together:\n• Android package: {packageName}\n• Web client ID passed to GOOGLE_SERVER_CLIENT_ID: {clientId}\n• Android OAuth client SHA-1 and SHA-256 for the keystore you are signing with\n• Uninstall and reinstall the app after changing Google Cloud or Firebase credentials'**
+  String googleSignInChecklist(Object packageName, Object clientId);
+
+  /// No description provided for @googleSignInDiagnosticsHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Diagnostics'**
+  String get googleSignInDiagnosticsHeading;
+
+  /// No description provided for @googleSignInDiagnosticPackage.
+  ///
+  /// In en, this message translates to:
+  /// **'Package: {packageName}'**
+  String googleSignInDiagnosticPackage(Object packageName);
+
+  /// No description provided for @googleSignInDiagnosticClientId.
+  ///
+  /// In en, this message translates to:
+  /// **'Server client ID: {clientId}'**
+  String googleSignInDiagnosticClientId(Object clientId);
+
+  /// No description provided for @googleSignInDiagnosticCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Plugin code: {code}'**
+  String googleSignInDiagnosticCode(Object code);
+
+  /// No description provided for @googleSignInDiagnosticStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Google status: {status}'**
+  String googleSignInDiagnosticStatus(Object status);
+
+  /// No description provided for @googleSignInDiagnosticRaw.
+  ///
+  /// In en, this message translates to:
+  /// **'Raw error: {rawMessage}'**
+  String googleSignInDiagnosticRaw(Object rawMessage);
 }
 
 class _AppLocalizationsDelegate

@@ -97,6 +97,86 @@ class AppLocalizationsEn extends AppLocalizations {
   String get quickAccess => '— QUICK ACCESS —';
 
   @override
+  String get shizukiGreetingWarm =>
+      'Welcome back~ I kept your console cozy for you.';
+
+  @override
+  String get shizukiGreetingReady =>
+      'Systems are synced. I\'m ready when you are.';
+
+  @override
+  String get shizukiTouchHair1 => 'Careful~ My hair takes forever to behave.';
+
+  @override
+  String get shizukiTouchHair2 => 'Hehe, a headpat? I can allow that.';
+
+  @override
+  String get shizukiTouchHead1 => 'You found my focus point.';
+
+  @override
+  String get shizukiTouchHead2 =>
+      'My thoughts get all sparkly when you tap there.';
+
+  @override
+  String get shizukiTouchFace1 => 'That\'s close. I\'m paying attention~';
+
+  @override
+  String get shizukiTouchFace2 => 'Eyes up here, commander.';
+
+  @override
+  String get shizukiTouchChest1 => 'Easy there~ personal space still exists.';
+
+  @override
+  String get shizukiTouchChest2 => 'That area is a little sensitive, okay?';
+
+  @override
+  String get shizukiTouchTorso1 => 'Steady touch detected. I\'m okay.';
+
+  @override
+  String get shizukiTouchTorso2 =>
+      'You always find the center of gravity, huh?';
+
+  @override
+  String get shizukiTouchArms1 =>
+      'Arms online. Want me to help with something?';
+
+  @override
+  String get shizukiTouchArms2 =>
+      'A gentle tap there feels surprisingly grounding.';
+
+  @override
+  String get shizukiTouchHands1 =>
+      'Holding hands would be less glitchy than poking.';
+
+  @override
+  String get shizukiTouchHands2 => 'My hands are free if you need backup.';
+
+  @override
+  String get shizukiTouchThighs1 => 'That\'s lower than I expected.';
+
+  @override
+  String get shizukiTouchThighs2 => 'Commander, that\'s a bold touch zone.';
+
+  @override
+  String get shizukiTouchLegs1 => 'Balance check passed.';
+
+  @override
+  String get shizukiTouchLegs2 =>
+      'Leg servos are still stable, thanks for checking.';
+
+  @override
+  String get shizukiTouchFeet1 => 'Hey~ That\'s my footing.';
+
+  @override
+  String get shizukiTouchFeet2 => 'Feet ping received. I won\'t topple over.';
+
+  @override
+  String get shizukiTouchGeneric1 => 'I felt that. What do you need?';
+
+  @override
+  String get shizukiTouchGeneric2 => 'Touch input received. I\'m listening.';
+
+  @override
   String get chat => 'CHAT';
 
   @override
@@ -267,4 +347,52 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get googleSignInCancelled => 'Sign-in cancelled';
+
+  @override
+  String get googleSignInNetworkIssue =>
+      'Network issue while contacting Google. Check connectivity and try again.';
+
+  @override
+  String get googleSignInConfigTitle => 'Android Google Sign-In needs setup';
+
+  @override
+  String get googleSignInDeveloperError =>
+      'Google Play Services returned developer error ApiException 10. This usually means the Android OAuth client, package name, signing SHA, or web client ID does not match this app build.';
+
+  @override
+  String get googleSignInMissingIdToken =>
+      'Google sign-in completed, but no ID token was returned for backend login.';
+
+  @override
+  String googleSignInChecklist(Object packageName, Object clientId) {
+    return 'Check these items together:\n• Android package: $packageName\n• Web client ID passed to GOOGLE_SERVER_CLIENT_ID: $clientId\n• Android OAuth client SHA-1 and SHA-256 for the keystore you are signing with\n• Uninstall and reinstall the app after changing Google Cloud or Firebase credentials';
+  }
+
+  @override
+  String get googleSignInDiagnosticsHeading => 'Diagnostics';
+
+  @override
+  String googleSignInDiagnosticPackage(Object packageName) {
+    return 'Package: $packageName';
+  }
+
+  @override
+  String googleSignInDiagnosticClientId(Object clientId) {
+    return 'Server client ID: $clientId';
+  }
+
+  @override
+  String googleSignInDiagnosticCode(Object code) {
+    return 'Plugin code: $code';
+  }
+
+  @override
+  String googleSignInDiagnosticStatus(Object status) {
+    return 'Google status: $status';
+  }
+
+  @override
+  String googleSignInDiagnosticRaw(Object rawMessage) {
+    return 'Raw error: $rawMessage';
+  }
 }
