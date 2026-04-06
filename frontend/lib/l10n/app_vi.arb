@@ -1,5 +1,29 @@
 {
   "@@locale": "vi",
+  "shizukiGreetingWarm": "Chào mừng bạn quay lại~ Mình đã giữ bảng điều khiển thật ấm cho bạn.",
+  "shizukiGreetingReady": "Hệ thống đã đồng bộ. Mình sẵn sàng rồi.",
+  "shizukiTouchHair1": "Nhẹ thôi~ Tóc mình khó vào nếp lắm.",
+  "shizukiTouchHair2": "Hehe, xoa đầu hả? Mình cho phép đó.",
+  "shizukiTouchHead1": "Bạn chạm đúng điểm tập trung của mình rồi.",
+  "shizukiTouchHead2": "Chạm chỗ đó làm đầu mình sáng rực luôn.",
+  "shizukiTouchFace1": "Gần quá đó. Mình đang chú ý đây~",
+  "shizukiTouchFace2": "Nhìn vào mắt mình này, chỉ huy.",
+  "shizukiTouchChest1": "Từ từ thôi~ Vẫn nên có khoảng cách riêng nhé.",
+  "shizukiTouchChest2": "Chỗ đó hơi nhạy cảm đó, được không?",
+  "shizukiTouchTorso1": "Đã nhận chạm trung tâm. Mình ổn.",
+  "shizukiTouchTorso2": "Lúc nào bạn cũng tìm đúng trọng tâm nhỉ?",
+  "shizukiTouchArms1": "Tay hoạt động tốt. Bạn cần mình giúp gì không?",
+  "shizukiTouchArms2": "Một cái chạm nhẹ ở đó lại thấy yên tâm ghê.",
+  "shizukiTouchHands1": "Nắm tay còn đỡ lỗi hơn chọc đó.",
+  "shizukiTouchHands2": "Tay mình rảnh nếu bạn cần hỗ trợ.",
+  "shizukiTouchThighs1": "Ơ, thấp hơn mình nghĩ đó.",
+  "shizukiTouchThighs2": "Chỉ huy, vùng chạm này táo bạo ghê.",
+  "shizukiTouchLegs1": "Kiểm tra thăng bằng hoàn tất.",
+  "shizukiTouchLegs2": "Servo chân vẫn ổn, cảm ơn đã kiểm tra.",
+  "shizukiTouchFeet1": "Ê~ Đó là chỗ đứng của mình mà.",
+  "shizukiTouchFeet2": "Đã nhận tín hiệu ở bàn chân. Mình chưa ngã đâu.",
+  "shizukiTouchGeneric1": "Mình cảm nhận được rồi. Bạn cần gì nào?",
+  "shizukiTouchGeneric2": "Đã nhận chạm. Mình đang nghe đây.",
   "appName": "Shizuki AI",
   "appVersion": "v2.5.0",
   "systemOnline": "◆ HỆ THỐNG ONLINE ◆",
@@ -85,4 +109,47 @@
   "googleNotConfigured": "Chưa cấu hình đăng nhập Google. Hãy build với --dart-define=GOOGLE_SERVER_CLIENT_ID=mã_web_client.",
   "googleSignInFailed": "Đăng nhập Google thất bại",
   "googleSignInCancelled": "Đã hủy đăng nhập"
+  ,
+  "googleSignInNetworkIssue": "Có lỗi mạng khi kết nối tới Google. Hãy kiểm tra mạng rồi thử lại.",
+  "googleSignInConfigTitle": "Cần cấu hình Google Sign-In trên Android",
+  "googleSignInDeveloperError": "Google Play Services trả về lỗi nhà phát triển ApiException 10. Thường là do OAuth Android, tên gói, SHA ký ứng dụng hoặc web client ID không khớp với bản build này.",
+  "googleSignInMissingIdToken": "Đăng nhập Google đã hoàn tất nhưng không trả về ID token cho backend.",
+  "googleSignInChecklist": "Hãy kiểm tra các mục này cùng nhau:\n• Tên gói Android: {packageName}\n• Web client ID truyền vào GOOGLE_SERVER_CLIENT_ID: {clientId}\n• SHA-1 và SHA-256 của keystore đang dùng để ký ứng dụng\n• Gỡ cài đặt rồi cài lại ứng dụng sau khi đổi cấu hình Google Cloud hoặc Firebase",
+  "@googleSignInChecklist": {
+    "placeholders": {
+      "packageName": {},
+      "clientId": {}
+    }
+  },
+  "googleSignInDiagnosticsHeading": "Chẩn đoán",
+  "googleSignInDiagnosticPackage": "Tên gói: {packageName}",
+  "@googleSignInDiagnosticPackage": {
+    "placeholders": {
+      "packageName": {}
+    }
+  },
+  "googleSignInDiagnosticClientId": "Server client ID: {clientId}",
+  "@googleSignInDiagnosticClientId": {
+    "placeholders": {
+      "clientId": {}
+    }
+  },
+  "googleSignInDiagnosticCode": "Mã plugin: {code}",
+  "@googleSignInDiagnosticCode": {
+    "placeholders": {
+      "code": {}
+    }
+  },
+  "googleSignInDiagnosticStatus": "Mã trạng thái Google: {status}",
+  "@googleSignInDiagnosticStatus": {
+    "placeholders": {
+      "status": {}
+    }
+  },
+  "googleSignInDiagnosticRaw": "Lỗi gốc: {rawMessage}",
+  "@googleSignInDiagnosticRaw": {
+    "placeholders": {
+      "rawMessage": {}
+    }
+  }
 }

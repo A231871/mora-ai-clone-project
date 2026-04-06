@@ -28,12 +28,14 @@ class _RemindersScreenState extends State<RemindersScreen> {
     _notificationSub = ChatService().pendingRemindersStream.listen((data) {
       if (mounted) {
         final loc = AppLocalizations.of(context)!;
-        final currentTasks = data.map((e) => Task.fromJson(Map<String, dynamic>.from(e as Map))).toList();
+        final currentTasks = data
+            .map((e) => Task.fromJson(Map<String, dynamic>.from(e as Map)))
+            .toList();
         for (final task in currentTasks) {
           if (!task.isDone) {
             DateTime? schedule;
             if (task.isoTime.isNotEmpty) {
-               schedule = DateTime.tryParse(task.isoTime)?.toLocal();
+              schedule = DateTime.tryParse(task.isoTime)?.toLocal();
             }
             if (schedule != null) {
               NotificationService().scheduleReminderNotification(
@@ -68,7 +70,8 @@ class _RemindersScreenState extends State<RemindersScreen> {
     super.dispose();
   }
 
-  Future<void> _confirmDeleteAll(BuildContext context, List<Task> currentTasks) async {
+  Future<void> _confirmDeleteAll(
+      BuildContext context, List<Task> currentTasks) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -78,24 +81,28 @@ class _RemindersScreenState extends State<RemindersScreen> {
           borderRadius: BorderRadius.all(Radius.circular(16)),
         ),
         title: Row(
-          children:[
+          children: [
             const Icon(Icons.warning_amber_rounded, color: Colors.redAccent),
             const SizedBox(width: AppSpacing.sm),
-            Text('SYSTEM PURGE', style: AppTextStyles.titleMedium.copyWith(color: Colors.redAccent)),
+            Text('SYSTEM PURGE',
+                style: AppTextStyles.titleMedium
+                    .copyWith(color: Colors.redAccent)),
           ],
         ),
         content: const Text(
           'Are you sure you want to delete all reminders?\n\nThis action cannot be undone.',
           style: AppTextStyles.bodyMedium,
         ),
-        actions:[
+        actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
             child: const Text('CANCEL', style: AppTextStyles.caption),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: Text('PURGE', style: AppTextStyles.caption.copyWith(color: Colors.redAccent, fontWeight: FontWeight.bold)),
+            child: Text('PURGE',
+                style: AppTextStyles.caption.copyWith(
+                    color: Colors.redAccent, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -104,136 +111,183 @@ class _RemindersScreenState extends State<RemindersScreen> {
     if (confirmed == true) {
       // Cancel all local notifications by iterating through known tasks
       for (final task in currentTasks) {
-        NotificationService().cancelReminderNotifications(task.id, previousDaysOfWeek: task.daysOfWeek);
+        NotificationService().cancelReminderNotifications(task.id,
+            previousDaysOfWeek: task.daysOfWeek);
       }
       ChatService().deleteAllReminders();
     }
   }
 
-  Future<void> _showAddEditReminderDialog(BuildContext context, {Task? existingTask}) async {
+  Future<void> _showAddEditReminderDialog(BuildContext context,
+      {Task? existingTask}) async {
     final titleCtrl = TextEditingController(text: existingTask?.title ?? '');
     TimeOfDay? selectedTime;
     if (existingTask != null && existingTask.isoTime.isNotEmpty) {
       final t = DateTime.tryParse(existingTask.isoTime)?.toLocal();
       if (t != null) selectedTime = TimeOfDay.fromDateTime(t);
     }
-    
-    List<String> selectedDays = List.from(existingTask?.daysOfWeek ??[]);
-    final daysOfWeek =['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+    List<String> selectedDays = List.from(existingTask?.daysOfWeek ?? []);
+    final daysOfWeek = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
     await showDialog(
       context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (context, setDialogState) {
-          return AlertDialog(
-            backgroundColor: AppColors.bgCard,
-            title: Text(existingTask == null ? 'NEW TASK' : 'EDIT TASK', style: AppTextStyles.titleMedium),
-            // WRAPPED THE COLUMN WITH SingleChildScrollView HERE
-            content: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children:[
-                  TextField(
-                    controller: titleCtrl,
-                    style: AppTextStyles.bodyMedium,
-                    decoration: const InputDecoration(
-                      hintText: 'Task title...',
-                      hintStyle: AppTextStyles.hint,
-                    ),
+      builder: (ctx) => StatefulBuilder(builder: (context, setDialogState) {
+        return AlertDialog(
+          backgroundColor: AppColors.bgCard,
+          title: Text(existingTask == null ? 'NEW TASK' : 'EDIT TASK',
+              style: AppTextStyles.titleMedium),
+          // WRAPPED THE COLUMN WITH SingleChildScrollView HERE
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: titleCtrl,
+                  style: AppTextStyles.bodyMedium,
+                  decoration: const InputDecoration(
+                    hintText: 'Task title...',
+                    hintStyle: AppTextStyles.hint,
                   ),
-                  const SizedBox(height: AppSpacing.md),
-                  ElevatedButton(
-                    onPressed: () async {
-                      final t = await showTimePicker(
-                        context: context,
-                        initialTime: selectedTime ?? TimeOfDay.now(),
-                      );
-                      if (t != null) {
-                        setDialogState(() => selectedTime = t);
-                      }
-                    },
-                    child: Text(
-                      selectedTime == null 
-                          ? 'SELECT SCHEDULE' 
-                          : '${selectedTime!.hour.toString().padLeft(2, '0')}:${selectedTime!.minute.toString().padLeft(2, '0')}',
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  Wrap(
-                    spacing: 4.0,
-                    runSpacing: 4.0,
-                    alignment: WrapAlignment.center,
-                    children: daysOfWeek.map((day) {
-                      final isSelected = selectedDays.contains(day);
-                      return FilterChip(
-                        label: Text(day, style: AppTextStyles.caption.copyWith(
-                          color: isSelected ? AppColors.textPrimary : AppColors.textSecondary
-                        )),
-                        selected: isSelected,
-                        selectedColor: AppColors.primary.withValues(alpha: 0.4),
-                        backgroundColor: Colors.transparent,
-                        shape: StadiumBorder(
-                          side: BorderSide(
-                            color: isSelected ? AppColors.primary : AppColors.textSecondary.withValues(alpha: 0.5)
-                          )
-                        ),
-                        onSelected: (bool selected) {
-                          setDialogState(() {
-                            if (selected) {
-                              selectedDays.add(day);
-                            } else {
-                              selectedDays.remove(day);
-                            }
-                          });
-                        },
-                      );
-                    }).toList(),
-                  ),
-                ],
-              ),
-            ),
-            actions:[
-              TextButton(
-                onPressed: () => Navigator.pop(ctx),
-                child: const Text('CANCEL', style: AppTextStyles.caption),
-              ),
-              TextButton(
-                onPressed: () {
-                  if (titleCtrl.text.isNotEmpty && selectedTime != null) {
-                    final now = DateTime.now();
-                    DateTime schedule = DateTime(
-                      now.year, now.month, now.day,
-                      selectedTime!.hour, selectedTime!.minute,
+                ),
+                const SizedBox(height: AppSpacing.md),
+                ElevatedButton(
+                  onPressed: () async {
+                    final t = await showTimePicker(
+                      context: context,
+                      initialTime: selectedTime ?? TimeOfDay.now(),
                     );
-                    
-                    if (schedule.isBefore(now)) {
-                      schedule = schedule.add(const Duration(days: 1));
+                    if (t != null) {
+                      setDialogState(() => selectedTime = t);
                     }
+                  },
+                  child: Text(
+                    selectedTime == null
+                        ? 'SELECT SCHEDULE'
+                        : '${selectedTime!.hour.toString().padLeft(2, '0')}:${selectedTime!.minute.toString().padLeft(2, '0')}',
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                Wrap(
+                  spacing: 4.0,
+                  runSpacing: 4.0,
+                  alignment: WrapAlignment.center,
+                  children: daysOfWeek.map((day) {
+                    final isSelected = selectedDays.contains(day);
+                    return FilterChip(
+                      label: Text(day,
+                          style: AppTextStyles.caption.copyWith(
+                              color: isSelected
+                                  ? AppColors.textPrimary
+                                  : AppColors.textSecondary)),
+                      selected: isSelected,
+                      selectedColor: AppColors.primary.withValues(alpha: 0.4),
+                      backgroundColor: Colors.transparent,
+                      shape: StadiumBorder(
+                          side: BorderSide(
+                              color: isSelected
+                                  ? AppColors.primary
+                                  : AppColors.textSecondary
+                                      .withValues(alpha: 0.5))),
+                      onSelected: (bool selected) {
+                        setDialogState(() {
+                          if (selected) {
+                            selectedDays.add(day);
+                          } else {
+                            selectedDays.remove(day);
+                          }
+                        });
+                      },
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                Text(
+                  selectedDays.isEmpty
+                      ? 'No weekdays selected means this will ring once.'
+                      : 'Selected weekdays will repeat every week.',
+                  style: AppTextStyles.caption.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('CANCEL', style: AppTextStyles.caption),
+            ),
+            TextButton(
+              onPressed: () {
+                final taskTitle = titleCtrl.text.trim();
+                if (taskTitle.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Enter a task title first.'),
+                      backgroundColor: AppColors.bgCard,
+                    ),
+                  );
+                  return;
+                }
 
-                    if (existingTask != null) {
-                      NotificationService().cancelReminderNotifications(existingTask.id, previousDaysOfWeek: existingTask.daysOfWeek);
-                      ChatService().updateReminder(
-                        id: existingTask.id,
-                        task: titleCtrl.text,
-                        isoTime: schedule.toIso8601String(),
-                        daysOfWeek: selectedDays,
-                      );
-                    } else {
-                      ChatService().createManualReminder(titleCtrl.text, schedule.toIso8601String(), selectedDays);
-                    }
-                    
-                    Navigator.pop(ctx);
-                  }
-                },
-                child: Text(existingTask == null ? 'CREATE' : 'SAVE', style: AppTextStyles.caption.copyWith(color: AppColors.primary)),
-              ),
-            ],
-          );
-        }
-      ),
+                if (selectedTime == null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                        'Choose a schedule time first. Leave weekdays empty if you want a one-time alarm.',
+                      ),
+                      backgroundColor: AppColors.bgCard,
+                    ),
+                  );
+                  return;
+                }
+
+                final now = DateTime.now();
+                DateTime schedule = DateTime(
+                  now.year,
+                  now.month,
+                  now.day,
+                  selectedTime!.hour,
+                  selectedTime!.minute,
+                );
+
+                if (schedule.isBefore(now)) {
+                  schedule = schedule.add(const Duration(days: 1));
+                }
+
+                if (existingTask != null) {
+                  NotificationService().cancelReminderNotifications(
+                    existingTask.id,
+                    previousDaysOfWeek: existingTask.daysOfWeek,
+                  );
+                  ChatService().updateReminder(
+                    id: existingTask.id,
+                    task: taskTitle,
+                    isoTime: schedule.toIso8601String(),
+                    daysOfWeek: selectedDays,
+                  );
+                } else {
+                  ChatService().createManualReminder(
+                    taskTitle,
+                    schedule.toIso8601String(),
+                    selectedDays,
+                  );
+                }
+
+                Navigator.pop(ctx);
+              },
+              child: Text(existingTask == null ? 'CREATE' : 'SAVE',
+                  style:
+                      AppTextStyles.caption.copyWith(color: AppColors.primary)),
+            ),
+          ],
+        );
+      }),
     );
   }
-  
+
   Color _chipColor(String category) {
     final cat = category.toUpperCase();
     if (cat == 'WORK') return AppColors.chipWork;
@@ -246,112 +300,129 @@ class _RemindersScreenState extends State<RemindersScreen> {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<List<dynamic>>(
-      stream: ChatService().pendingRemindersStream,
-      initialData: ChatService().currentReminders,
-      builder: (context, snapshot) {
-        final currentTasks = (snapshot.data ??[])
-            .map((e) => Task.fromJson(Map<String, dynamic>.from(e as Map)))
-            .toList();
-        final int doneCount = currentTasks.where((t) => t.isDone).length;
+        stream: ChatService().pendingRemindersStream,
+        initialData: ChatService().currentReminders,
+        builder: (context, snapshot) {
+          final currentTasks = (snapshot.data ?? [])
+              .map((e) => Task.fromJson(Map<String, dynamic>.from(e as Map)))
+              .toList();
+          final int doneCount = currentTasks.where((t) => t.isDone).length;
 
-        return Scaffold(
-          backgroundColor: AppColors.bgDeep,
-          appBar: MechaAppBar(
-            title: AppLocalizations.of(context)!.remindersTitle,
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children:[
-                Text(
-                  '$doneCount/${currentTasks.length} DONE',
-                  style: AppTextStyles.caption
-                      .copyWith(color: AppColors.primary, fontWeight: FontWeight.w700),
-                ),
-                const SizedBox(width: AppSpacing.sm),
-                IconButton(
-                  icon: const Icon(Icons.done_all, color: AppColors.primary),
-                  tooltip: 'Complete All',
-                  onPressed: () {
-                    for (final task in currentTasks) {
-                      NotificationService().cancelReminderNotifications(task.id, previousDaysOfWeek: task.daysOfWeek);
-                    }
-                    ChatService().completeAllReminders();
-                  },
-                ),
-                IconButton(
-                  icon: const Icon(Icons.delete_sweep, color: AppColors.primary),
-                  tooltip: 'Delete All',
-                  onPressed: () => _confirmDeleteAll(context, currentTasks),
-                ),
-              ],
-            ),
-          ),
-          floatingActionButton: FloatingActionButton(
-            onPressed: () => _showAddEditReminderDialog(context),
-            backgroundColor: AppColors.primary,
-            child: const Icon(Icons.add, color: AppColors.textPrimary),
-          ),
-          body: Stack(
-            children:[
-              const GridBackground(),
-              Column(
-                children:[
-                  // ── Progress bar ─────────────────────────────────────────
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(AppRadius.pill),
-                      child: LinearProgressIndicator(
-                        value: currentTasks.isEmpty ? 0 : doneCount / currentTasks.length,
-                        minHeight: 4,
-                        backgroundColor: AppColors.bgCard,
-                        valueColor:
-                            const AlwaysStoppedAnimation<Color>(AppColors.primary),
-                      ),
-                    ),
+          return Scaffold(
+            backgroundColor: AppColors.bgDeep,
+            appBar: MechaAppBar(
+              title: AppLocalizations.of(context)!.remindersTitle,
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    '$doneCount/${currentTasks.length} DONE',
+                    style: AppTextStyles.caption.copyWith(
+                        color: AppColors.primary, fontWeight: FontWeight.w700),
                   ),
-
-                  const SizedBox(height: AppSpacing.md),
-
-                  // ── Task list ─────────────────────────────────────────────
-                  Expanded(
-                    child: currentTasks.isEmpty
-                        ? Center(
-                            child: Text(AppLocalizations.of(context)!.noRemindersYet,
-                                style: AppTextStyles.hint),
-                          )
-                        : ListView.builder(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: AppSpacing.md),
-                            itemCount: currentTasks.length,
-                            itemBuilder: (_, i) => _TaskCard(
-                              task: currentTasks[i],
-                              chipColor: _chipColor(currentTasks[i].category),
-                              onToggle: () {
-                                if (!currentTasks[i].isDone) {
-                                  NotificationService().cancelReminderNotifications(currentTasks[i].id, previousDaysOfWeek: currentTasks[i].daysOfWeek);
-                                }
-                                ChatService().updateReminder(id: currentTasks[i].id, isCompleted: !currentTasks[i].isDone);
-                              },
-                              onEdit: () {
-                                _showAddEditReminderDialog(context, existingTask: currentTasks[i]);
-                              },
-                              onDelete: () {
-                                NotificationService().cancelReminderNotifications(currentTasks[i].id, previousDaysOfWeek: currentTasks[i].daysOfWeek);
-                                ChatService().deleteReminder(currentTasks[i].id);
-                              },
-                            ),
-                          ),
+                  const SizedBox(width: AppSpacing.sm),
+                  IconButton(
+                    icon: const Icon(Icons.done_all, color: AppColors.primary),
+                    tooltip: 'Complete All',
+                    onPressed: () {
+                      for (final task in currentTasks) {
+                        NotificationService().cancelReminderNotifications(
+                            task.id,
+                            previousDaysOfWeek: task.daysOfWeek);
+                      }
+                      ChatService().completeAllReminders();
+                    },
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.delete_sweep,
+                        color: AppColors.primary),
+                    tooltip: 'Delete All',
+                    onPressed: () => _confirmDeleteAll(context, currentTasks),
                   ),
                 ],
               ),
-            ],
-          ),
-        );
-      }
-    );
+            ),
+            floatingActionButton: FloatingActionButton(
+              onPressed: () => _showAddEditReminderDialog(context),
+              backgroundColor: AppColors.primary,
+              child: const Icon(Icons.add, color: AppColors.textPrimary),
+            ),
+            body: Stack(
+              children: [
+                const GridBackground(),
+                Column(
+                  children: [
+                    // ── Progress bar ─────────────────────────────────────────
+                    Padding(
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(AppRadius.pill),
+                        child: LinearProgressIndicator(
+                          value: currentTasks.isEmpty
+                              ? 0
+                              : doneCount / currentTasks.length,
+                          minHeight: 4,
+                          backgroundColor: AppColors.bgCard,
+                          valueColor: const AlwaysStoppedAnimation<Color>(
+                              AppColors.primary),
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: AppSpacing.md),
+
+                    // ── Task list ─────────────────────────────────────────────
+                    Expanded(
+                      child: currentTasks.isEmpty
+                          ? Center(
+                              child: Text(
+                                  AppLocalizations.of(context)!.noRemindersYet,
+                                  style: AppTextStyles.hint),
+                            )
+                          : ListView.builder(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: AppSpacing.md),
+                              itemCount: currentTasks.length,
+                              itemBuilder: (_, i) => _TaskCard(
+                                task: currentTasks[i],
+                                chipColor: _chipColor(currentTasks[i].category),
+                                onToggle: () {
+                                  if (!currentTasks[i].isDone) {
+                                    NotificationService()
+                                        .cancelReminderNotifications(
+                                            currentTasks[i].id,
+                                            previousDaysOfWeek:
+                                                currentTasks[i].daysOfWeek);
+                                  }
+                                  ChatService().updateReminder(
+                                      id: currentTasks[i].id,
+                                      isCompleted: !currentTasks[i].isDone);
+                                },
+                                onEdit: () {
+                                  _showAddEditReminderDialog(context,
+                                      existingTask: currentTasks[i]);
+                                },
+                                onDelete: () {
+                                  NotificationService()
+                                      .cancelReminderNotifications(
+                                          currentTasks[i].id,
+                                          previousDaysOfWeek:
+                                              currentTasks[i].daysOfWeek);
+                                  ChatService()
+                                      .deleteReminder(currentTasks[i].id);
+                                },
+                              ),
+                            ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          );
+        });
   }
 }
-
 
 // ── Task card ──────────────────────────────────────────────────────────────────
 class _TaskCard extends StatelessWidget {
@@ -383,7 +454,7 @@ class _TaskCard extends StatelessWidget {
         ),
       ),
       child: Row(
-        children:[
+        children: [
           // ── Circle checkbox ─────────────────────────────────────────
           GestureDetector(
             onTap: onToggle,
@@ -393,15 +464,13 @@ class _TaskCard extends StatelessWidget {
               height: 28,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: task.isDone
-                    ? AppColors.primary
-                    : Colors.transparent,
+                color: task.isDone ? AppColors.primary : Colors.transparent,
                 border: Border.all(
                   color: AppColors.primary,
                   width: 2,
                 ),
                 boxShadow: task.isDone
-                    ?[
+                    ? [
                         BoxShadow(
                           color: AppColors.primary.withValues(alpha: 0.4),
                           blurRadius: 8,
@@ -424,7 +493,7 @@ class _TaskCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
-                  children:[
+                  children: [
                     StatusChip(label: task.category, color: chipColor),
                     if (task.isFeatured) ...[
                       const SizedBox(width: AppSpacing.xs),
@@ -447,7 +516,7 @@ class _TaskCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Row(
-                  children:[
+                  children: [
                     const Icon(Icons.access_time_outlined,
                         size: 12, color: AppColors.textSecondary),
                     const SizedBox(width: 4),
@@ -464,7 +533,7 @@ class _TaskCard extends StatelessWidget {
           // ── Action icons ─────────────────────────────────────────────
           Row(
             mainAxisSize: MainAxisSize.min,
-            children:[
+            children: [
               IconButton(
                 onPressed: onEdit,
                 icon: const Icon(Icons.edit_outlined,

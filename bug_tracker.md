@@ -12,11 +12,7 @@
 - [x] **UI Tweak**: Scale the model up (it is currently too small).
 - [x] **Bug**: The UI statuses are using mock/fake data instead of real state.
 - [x] **Bug**: The displayed time is incorrect. Sync it to `DateTime.now()` (device's local timezone).
-
-## [DEFERRED] Mascot Rendering
-- [ ] **Bug**: Model physics are broken (she floats statically instead of idling/breathing).
-  - *Note: Will be handled manually by a human animator later using proper Live2D/Spine tools.*
-  - *Rigged source assets live under `frontend/assets/` (e.g. `Shizuke_App_Model/`). When an export format is chosen, register assets in `pubspec.yaml` (comment placeholder added there).*
+- [x] **Feature (Live2D Cubism 4)**: Rigged export under `frontend/assets/Shizuke_App_Model/` (`.model3.json`, `.moc3`, `Shizuke_Real.2048/` textures, `.physics3.json`). `ShizukiAnimator` uses `webview_flutter` + PixiJS + `pixi-live2d-display-lipsyncpatch` (Cubism 4) from `assets/Shizuke_App_Model/web/`; `window.__shizukiSetEmotion` maps `ShizukiEmotion` to parameters (`ParamMouthOpenY`, `ParamEyeLSmile` / `ParamEyeRSmile`, brows, etc.). **Requires internet** on first load (ESM CDN). Chat screen drives `talk` / `smile` / `idle` / `sad` (system alerts) via the same widget. If `.moc3` or textures are missing, PNG fallback from `assets/avatar/` is used.
 
 ## 3. Reminder Screen (Tasks & Notifications)
 - [x] **Bug**: CRUD operations are broken. Crossing out tasks works visually, but creating new tasks fails, and deleting tasks does not persist to the database.

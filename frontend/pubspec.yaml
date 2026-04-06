@@ -53,6 +53,7 @@ dependencies:
   flutter_riverpod: ^3.3.1
   hooks_riverpod: ^3.3.1
   google_sign_in: ^6.2.2
+  webview_flutter: ^4.10.0
 
 dev_dependencies:
   flutter_test:
@@ -69,12 +70,16 @@ flutter:
   uses-material-design: true
 
   assets:
-    - assets/avatar/
     - assets/icons/
     - assets/sounds/
     - assets/bg_grid.png
-    # Rigged mascot (Live2D/Spine/Rive): when you export for Flutter, add the folder here, e.g.:
-    # - assets/Shizuke_App_Model/
+    - assets/Shizuki_App_Model/Shizuki_Real.model3.json
+    - assets/Shizuki_App_Model/Shizuki_Real.moc3
+    - assets/Shizuki_App_Model/Shizuki_Real.physics3.json
+    - assets/Shizuki_App_Model/Shizuki_Real.cdi3.json
+    - assets/Shizuki_App_Model/web/
+    - assets/Shizuki_App_Model/web/vendor/
+    - assets/Shizuki_App_Model/Shizuki_Real.2048/
 
   fonts:
     - family: Orbitron

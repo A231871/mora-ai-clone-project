@@ -1,4 +1,4 @@
-package com.example.frontend
+package com.nguyenhuutho.shizukiai
 
 import io.flutter.embedding.android.FlutterActivity
 

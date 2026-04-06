@@ -29,6 +29,30 @@
   "moodHappy": "♦ HAPPY",
   "shizukiGreeting": "Hiii~ I'm Shizuki! How can I help you today? ✨",
   "quickAccess": "— QUICK ACCESS —",
+  "shizukiGreetingWarm": "Welcome back~ I kept your console cozy for you.",
+  "shizukiGreetingReady": "Systems are synced. I'm ready when you are.",
+  "shizukiTouchHair1": "Careful~ My hair takes forever to behave.",
+  "shizukiTouchHair2": "Hehe, a headpat? I can allow that.",
+  "shizukiTouchHead1": "You found my focus point.",
+  "shizukiTouchHead2": "My thoughts get all sparkly when you tap there.",
+  "shizukiTouchFace1": "That's close. I'm paying attention~",
+  "shizukiTouchFace2": "Eyes up here, commander.",
+  "shizukiTouchChest1": "Easy there~ personal space still exists.",
+  "shizukiTouchChest2": "That area is a little sensitive, okay?",
+  "shizukiTouchTorso1": "Steady touch detected. I'm okay.",
+  "shizukiTouchTorso2": "You always find the center of gravity, huh?",
+  "shizukiTouchArms1": "Arms online. Want me to help with something?",
+  "shizukiTouchArms2": "A gentle tap there feels surprisingly grounding.",
+  "shizukiTouchHands1": "Holding hands would be less glitchy than poking.",
+  "shizukiTouchHands2": "My hands are free if you need backup.",
+  "shizukiTouchThighs1": "That's lower than I expected.",
+  "shizukiTouchThighs2": "Commander, that's a bold touch zone.",
+  "shizukiTouchLegs1": "Balance check passed.",
+  "shizukiTouchLegs2": "Leg servos are still stable, thanks for checking.",
+  "shizukiTouchFeet1": "Hey~ That's my footing.",
+  "shizukiTouchFeet2": "Feet ping received. I won't topple over.",
+  "shizukiTouchGeneric1": "I felt that. What do you need?",
+  "shizukiTouchGeneric2": "Touch input received. I'm listening.",
   "chat": "CHAT",
   "remind": "REMIND",
   "config": "CONFIG",
@@ -84,5 +108,47 @@
   "continueWithGoogle": "Continue with Google",
   "googleNotConfigured": "Google sign-in is not configured. Build with --dart-define=GOOGLE_SERVER_CLIENT_ID=your_web_client_id.",
   "googleSignInFailed": "Google sign-in failed",
-  "googleSignInCancelled": "Sign-in cancelled"
+  "googleSignInCancelled": "Sign-in cancelled",
+  "googleSignInNetworkIssue": "Network issue while contacting Google. Check connectivity and try again.",
+  "googleSignInConfigTitle": "Android Google Sign-In needs setup",
+  "googleSignInDeveloperError": "Google Play Services returned developer error ApiException 10. This usually means the Android OAuth client, package name, signing SHA, or web client ID does not match this app build.",
+  "googleSignInMissingIdToken": "Google sign-in completed, but no ID token was returned for backend login.",
+  "googleSignInChecklist": "Check these items together:\n• Android package: {packageName}\n• Web client ID passed to GOOGLE_SERVER_CLIENT_ID: {clientId}\n• Android OAuth client SHA-1 and SHA-256 for the keystore you are signing with\n• Uninstall and reinstall the app after changing Google Cloud or Firebase credentials",
+  "@googleSignInChecklist": {
+    "placeholders": {
+      "packageName": {},
+      "clientId": {}
+    }
+  },
+  "googleSignInDiagnosticsHeading": "Diagnostics",
+  "googleSignInDiagnosticPackage": "Package: {packageName}",
+  "@googleSignInDiagnosticPackage": {
+    "placeholders": {
+      "packageName": {}
+    }
+  },
+  "googleSignInDiagnosticClientId": "Server client ID: {clientId}",
+  "@googleSignInDiagnosticClientId": {
+    "placeholders": {
+      "clientId": {}
+    }
+  },
+  "googleSignInDiagnosticCode": "Plugin code: {code}",
+  "@googleSignInDiagnosticCode": {
+    "placeholders": {
+      "code": {}
+    }
+  },
+  "googleSignInDiagnosticStatus": "Google status: {status}",
+  "@googleSignInDiagnosticStatus": {
+    "placeholders": {
+      "status": {}
+    }
+  },
+  "googleSignInDiagnosticRaw": "Raw error: {rawMessage}",
+  "@googleSignInDiagnosticRaw": {
+    "placeholders": {
+      "rawMessage": {}
+    }
+  }
 }
