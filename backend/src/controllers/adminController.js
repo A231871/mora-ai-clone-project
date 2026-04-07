@@ -37,6 +37,8 @@ const {
   updateAdminUser,
 } = require('../services/admin.service');
 
+// Admin responses intentionally share one JSON envelope shape so the frontend
+// admin console can reuse generic data-loading helpers.
 const respond = (res, statusCode, data, message = null) =>
   res.status(statusCode).json({
     success: true,

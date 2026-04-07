@@ -15,6 +15,8 @@ const {
 const { findTaskForUser } = require('../services/task.service');
 
 const ensureFileActionAccess = async (user, ownerType, ownerId, minimumRole = 'viewer') => {
+  // File permissions depend on the resource the file is attached to.
+  // Project/task-linked files inherit access from that project/task.
   if (!ownerType || ownerType === 'unassigned') {
     throw new ApiError(403, 'You do not have permission for this file action');
   }
@@ -59,6 +61,8 @@ const listFiles = asyncHandler(async (req, res) => {
 
   if (ownerId) {
     if (ownerType === 'task') {
+      // Task filtering must support both the old single-task ownership model
+      // and the new reusable file model with taskIds.
       query.$or = [
         { ownerType: 'task', ownerId },
         { taskIds: ownerId },
@@ -110,6 +114,8 @@ const uploadFile = asyncHandler(async (req, res) => {
     uploadedBy: req.user._id,
     ownerType,
     ownerId,
+    // Direct task uploads are initialized with a single task link, but the same file
+    // can later be attached to other tasks as well.
     taskIds: ownerType === 'task' && ownerId ? [ownerId] : [],
     kind,
     originalName: req.file.originalname,
@@ -151,6 +157,8 @@ const deleteFile = asyncHandler(async (req, res) => {
     );
   }
 
+  // Deleting a file is stronger than detaching it: every task reference is cleaned up
+  // before the metadata row and physical file are removed.
   const linkedTaskIds = getFileAttachedTaskIds(fileAsset);
   if (linkedTaskIds.length > 0) {
     await Task.updateMany(

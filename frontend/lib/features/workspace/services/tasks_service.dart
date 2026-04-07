@@ -14,6 +14,8 @@ class TasksService {
     String? tagId,
     String? assigneeId,
   }) async {
+    // Task filters are forwarded directly to the backend so project/task lists
+    // stay scalable without downloading everything first.
     final rawTasks = await _apiClient.get(
       '/tasks',
       queryParameters: <String, String?>{
@@ -46,6 +48,8 @@ class TasksService {
     List<String> fileIds = const <String>[],
     DateTime? reminderAt,
   }) async {
+    // Task creation now includes workflow timing, assignments, tags, files,
+    // and reminder linkage in one request.
     final rawTask = await _apiClient.post(
       '/tasks',
       body: <String, dynamic>{
@@ -82,6 +86,8 @@ class TasksService {
     bool clearDueDate = false,
     bool clearEstimatedMinutes = false,
   }) async {
+    // The update payload supports explicit "clear" flags for nullable fields
+    // so the frontend can intentionally remove values like due dates.
     final rawTask = await _apiClient.patch(
       '/tasks/$taskId',
       body: <String, dynamic>{
@@ -109,6 +115,8 @@ class TasksService {
   }
 
   Future<List<TaskComment>> listComments(String taskId) async {
+    // Comments are loaded separately from the task so detail screens can refresh
+    // thread content without reloading the whole task payload.
     final rawComments =
         await _apiClient.get('/tasks/$taskId/comments') as List<dynamic>;
     return rawComments.map(TaskComment.fromJson).toList(growable: false);
@@ -144,6 +152,7 @@ class TasksService {
   }
 
   Future<List<TaskChecklistEntry>> listChecklist(String taskId) async {
+    // Checklist items are a dedicated backend model, not just local UI state.
     final rawItems =
         await _apiClient.get('/tasks/$taskId/checklist') as List<dynamic>;
     return rawItems.map(TaskChecklistEntry.fromJson).toList(growable: false);
@@ -183,6 +192,7 @@ class TasksService {
   }
 
   Future<List<TaskActivityEntry>> listActivity(String taskId) async {
+    // Activity feed is backend-generated audit history for professor/demo visibility.
     final rawItems =
         await _apiClient.get('/tasks/$taskId/activity') as List<dynamic>;
     return rawItems.map(TaskActivityEntry.fromJson).toList(growable: false);

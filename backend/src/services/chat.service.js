@@ -23,6 +23,7 @@ const sendChatMessage = async ({
     throw new ApiError(400, 'message is required');
   }
 
+  // Every chat turn is persisted so the AI can respond with recent context.
   await ChatMessage.create({
     userId: user._id,
     role: 'user',
@@ -38,9 +39,12 @@ const sendChatMessage = async ({
   let createdReminder = null;
 
   if (intentData.systemError) {
+    // AI/runtime failures are converted into user-safe system replies instead of crashing chat.
     finalAiReply = intentData.systemError.userMessage;
     systemAlertMessage = intentData.systemError.alertMessage;
   } else if (intentData.isReminder && intentData.time) {
+    // The chat assistant can create real backend reminders, so chat is not
+    // just conversational text generation.
     createdReminder = await createReminder({
       userId: user._id,
       payload: {
@@ -61,6 +65,7 @@ const sendChatMessage = async ({
       finalAiReply = `[ SYSTEM ] Acknowledged! I will remind you: ${intentData.task} at ${displayTime}.`;
     }
   } else {
+    // Normal conversation path: send recent message history into Gemini.
     let recentHistory = await ChatMessage.find({ userId: user._id })
       .sort({ timestamp: -1 })
       .limit(10)

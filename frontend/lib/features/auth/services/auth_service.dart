@@ -49,6 +49,8 @@ class AuthService {
 
   Future<Map<String, dynamic>> login(String username, String password) async {
     try {
+      // Login persists both the access token and refresh token so later API calls
+      // and socket connections can authenticate without asking the user again.
       final response = await _httpClient.post(
         Uri.parse(ApiConstants.loginEndpoint),
         headers: const {'Content-Type': 'application/json'},
@@ -122,6 +124,7 @@ class AuthService {
     } catch (_) {
       // Local cleanup is more important than surfacing a logout transport error.
     } finally {
+      // Local cleanup also disconnects realtime chat/reminder sockets.
       ChatService().disconnect();
       await _clearGoogleSession();
       await SessionStorage.clearSession();
@@ -151,6 +154,8 @@ class AuthService {
   }
 
   Future<AppUser?> hydrateCurrentUser() async {
+    // The app can render instantly from cached session data, then quietly
+    // refresh from the backend when the network is available.
     final cachedUser = await SessionStorage.getCurrentUser();
     try {
       return await _usersService.getCurrentUser();
@@ -162,6 +167,8 @@ class AuthService {
   Future<GoogleSignInResult> signInWithGoogle() async {
     final config = GoogleSignInConfigSnapshot.current();
     try {
+      // Google sign-in ends by exchanging the Google ID token with our own backend,
+      // so the rest of the app still uses the same JWT/session model.
       final googleSignIn = _buildGoogleSignIn();
       await _clearGoogleSession(googleSignIn: googleSignIn);
 
@@ -252,6 +259,7 @@ class AuthService {
   }
 
   Future<void> _persistSessionFromPayload(Map<String, dynamic> payload) async {
+    // Backend auth responses always normalize to the same session shape.
     final token = payload['token']?.toString() ?? '';
     final refreshToken = payload['refreshToken']?.toString() ?? '';
     if (token.isEmpty || refreshToken.isEmpty) {

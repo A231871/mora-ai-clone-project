@@ -12,6 +12,8 @@ class FilesService {
     String? ownerId,
     String? kind,
   }) async {
+    // The vault can list all user-uploaded files, while task/project views can
+    // still filter by ownership when needed.
     final rawFiles = await _apiClient.get(
       '/files',
       queryParameters: <String, String?>{
@@ -30,6 +32,8 @@ class FilesService {
     String? ownerId,
     String? kind,
   }) async {
+    // Files are uploaded as multipart form data because the backend stores
+    // both metadata in MongoDB and the actual file under /uploads.
     final rawFile = await _apiClient.postMultipart(
       '/files',
       filePath: filePath,
@@ -44,6 +48,7 @@ class FilesService {
   }
 
   Future<void> deleteFile(String fileId) async {
+    // Deleting removes both the metadata record and the physical file on disk.
     await _apiClient.delete('/files/$fileId');
   }
 }

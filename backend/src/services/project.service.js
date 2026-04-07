@@ -22,6 +22,7 @@ const PROJECT_ROLE_WEIGHT = {
   owner: 3,
 };
 
+// Default tags make a brand-new project immediately usable without manual setup.
 const DEFAULT_PROJECT_TAGS = [
   { name: 'General', color: '#38bdf8' },
   { name: 'Urgent', color: '#fb7185' },
@@ -77,6 +78,7 @@ const getProjectById = async (projectId) => {
 };
 
 const getProjectAccess = async (user, projectId) => {
+  // Project membership is the source of truth for feature access in the workspace.
   const project = await getProjectById(projectId);
   const membership = await ProjectMember.findOne({
     projectId: project._id,
@@ -96,6 +98,7 @@ const getProjectAccess = async (user, projectId) => {
 };
 
 const requireProjectRole = async (user, projectId, minimumRole = 'viewer') => {
+  // We compare numeric weights instead of nested conditionals to keep role checks simple.
   const access = await getProjectAccess(user, projectId);
   const currentWeight = PROJECT_ROLE_WEIGHT[access.projectRole] || 0;
   const minimumWeight = PROJECT_ROLE_WEIGHT[minimumRole] || 0;
@@ -136,6 +139,8 @@ const createProjectWithDefaults = async (user, payload) => {
   let createdProjectId = null;
 
   await session.withTransaction(async () => {
+    // The project, owner membership, and starter tags are created atomically so
+    // a partially-created workspace never leaks into the UI.
     const [project] = await Project.create(
       [
         {
@@ -198,6 +203,8 @@ const updateProject = async (user, projectId, payload) => {
 };
 
 const deleteProjectTree = async (projectId) => {
+  // Project deletion is a tree operation: members, tags, tasks, comments,
+  // invites, reminders, and files are all part of the project boundary.
   const project = await getProjectById(projectId);
   const storagePaths = [];
 
@@ -226,6 +233,8 @@ const deleteProjectTree = async (projectId) => {
       taskIdStrings.includes(file.ownerId.toString()) &&
       remainingTaskIds.length === 0;
 
+    // Files that only belong to this project tree can be deleted physically.
+    // Shared vault files only lose the task links that point into this project.
     if (isProjectOwnedFile || isLegacyProjectTaskFile) {
       storagePaths.push(file.storagePath);
       fileIdsToDelete.push(file._id);
@@ -410,6 +419,8 @@ const respondToProjectInvite = async (user, inviteId, action) => {
 };
 
 const ensureNotRemovingLastOwner = async (projectId, memberId, nextRole = null) => {
+  // We never allow the final owner to disappear, otherwise the project would
+  // become unmanageable.
   const currentMember = await ProjectMember.findOne({
     _id: memberId,
     projectId,

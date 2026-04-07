@@ -17,6 +17,8 @@ const getGeminiModelCandidates = () => {
 };
 
 const getAiRuntimeSummary = () => {
+  // The server prints a safe runtime summary at boot so we can debug
+  // configuration problems without logging the full API key.
   const apiKey = process.env.GEMINI_API_KEY?.trim() ?? '';
   return {
     keyLoaded: apiKey.length > 0,
@@ -43,6 +45,8 @@ const isModelCandidateError = (error) => {
 };
 
 const getLocalizedAiFailure = (lang = 'en', error = null, context = {}) => {
+  // Instead of exposing raw provider errors to the UI, we convert them into
+  // actionable, localized backend diagnostics.
   const rawMessage = [
     error?.message,
     error?.statusText,
@@ -141,6 +145,8 @@ const getLocalizedAiFailure = (lang = 'en', error = null, context = {}) => {
 };
 
 const buildReminderPrompt = () => {
+  // Reminder extraction explicitly tells Gemini to convert the user’s local
+  // Asia/Ho_Chi_Minh time into strict UTC for storage consistency.
   const currentLocalTime = new Intl.DateTimeFormat('en-US', {
     weekday: 'long',
     year: 'numeric',
@@ -157,6 +163,8 @@ const buildReminderPrompt = () => {
 };
 
 const runWithGeminiModel = async (task) => {
+  // Model fallback keeps the chat feature resilient if one candidate model
+  // becomes unavailable or deprecated.
   const genAI = getGeminiClient();
   if (!genAI) {
     const summary = getAiRuntimeSummary();
@@ -217,6 +225,8 @@ const generateResponseWithHistory = async (
       parts: [{ text: msg.content }],
     }));
 
+    // Gemini expects clean user/model alternation, so we sanitize persisted
+    // history before starting the chat session.
     while (
       structuredHistory.length > 0 &&
       structuredHistory[0].role !== 'user'
@@ -268,6 +278,8 @@ const generateResponseWithHistory = async (
 };
 
 const parseReminderIntent = async (userMessage, lang = 'en') => {
+  // Reminder detection is separated from normal response generation so the app
+  // can turn natural language into a concrete backend record.
   const summary = getAiRuntimeSummary();
   const execution = await runWithGeminiModel(async (genAI, modelName) => {
     const model = genAI.getGenerativeModel({

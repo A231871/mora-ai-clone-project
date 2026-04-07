@@ -32,6 +32,8 @@ const getProjectAnalyticsOverview = async (user, projectId) => {
   const now = new Date();
   const todayStart = startOfLocalDay(now);
   const todayEnd = endOfLocalDay(now);
+  // A single aggregation with $facet lets us compute several dashboard cards
+  // in one database round trip.
   const [aggregate] = await Task.aggregate([
     {
       $match: {
@@ -136,6 +138,8 @@ const getProjectAnalyticsOverview = async (user, projectId) => {
 const getProjectAnalyticsWorkload = async (user, projectId) => {
   await getProjectAccess(user, projectId);
 
+  // Workload analytics break tasks down by priority, assignee, and tag
+  // so the frontend dashboard can stay simple and mostly read-only.
   const [aggregate] = await Task.aggregate([
     {
       $match: {

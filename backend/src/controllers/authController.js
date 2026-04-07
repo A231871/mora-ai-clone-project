@@ -20,6 +20,8 @@ const getRequestMeta = (req) => ({
 });
 
 const buildUniqueUsername = async (baseUsername) => {
+  // Google accounts can collide on the same email prefix, so we generate
+  // a unique username instead of failing the login flow.
   let username = baseUsername;
   let suffix = 0;
 
@@ -52,6 +54,7 @@ const register = asyncHandler(async (req, res) => {
     username,
     email: email || undefined,
     password: hashedPassword,
+    // The first registered account is promoted to admin to bootstrap the system.
     systemRole: userCount === 0 ? 'admin' : 'member',
     profile: {
       displayName: username,
@@ -134,6 +137,7 @@ const googleLogin = asyncHandler(async (req, res) => {
       email: email || undefined,
       password: null,
       googleId,
+      // Google sign-in follows the same bootstrap rule as local registration.
       systemRole: userCount === 0 ? 'admin' : 'member',
       profile: {
         displayName: payload.name || username,
@@ -141,6 +145,7 @@ const googleLogin = asyncHandler(async (req, res) => {
       },
     });
   } else if (!user.googleId) {
+    // Existing local accounts can later be linked to Google without creating duplicates.
     user.googleId = googleId;
   }
 
@@ -166,6 +171,7 @@ const googleLogin = asyncHandler(async (req, res) => {
 
 const refresh = asyncHandler(async (req, res) => {
   const { refreshToken } = req.body;
+  // Refresh requests issue a brand new token pair instead of extending the old one.
   const refreshedSession = await rotateRefreshToken(refreshToken, getRequestMeta(req));
   refreshedSession.user.lastLoginAt = new Date();
   await refreshedSession.user.save();

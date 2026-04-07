@@ -8,6 +8,8 @@ class ProjectsService {
   final ApiClient _apiClient;
 
   Future<List<WorkspaceProject>> listProjects() async {
+    // Projects are sorted client-side by recency so the most recently touched
+    // workspace appears first in the dashboard.
     final rawProjects = await _apiClient.get('/projects') as List<dynamic>;
     return rawProjects.map(WorkspaceProject.fromJson).toList(growable: false)
       ..sort((a, b) {
@@ -42,6 +44,8 @@ class ProjectsService {
   Future<ProjectAnalyticsOverview> getAnalyticsOverview(
     String projectId,
   ) async {
+    // These analytics endpoints keep the frontend basic: the server already
+    // computes counts and rates for the dashboard cards.
     final rawAnalytics =
         await _apiClient.get('/projects/$projectId/analytics/overview');
     return ProjectAnalyticsOverview.fromJson(rawAnalytics);
@@ -78,6 +82,7 @@ class ProjectsService {
   }
 
   Future<List<ProjectMember>> listMembers(String projectId) async {
+    // Member data powers assignment chips, role management, and invite views.
     final rawMembers =
         await _apiClient.get('/projects/$projectId/members') as List<dynamic>;
     return rawMembers.map(ProjectMember.fromJson).toList(growable: false);
@@ -100,6 +105,7 @@ class ProjectsService {
   }
 
   Future<List<ProjectInvite>> listProjectInvites(String projectId) async {
+    // Pending invites are a separate endpoint because only owners need them.
     final rawInvites =
         await _apiClient.get('/projects/$projectId/invites') as List<dynamic>;
     return rawInvites.map(ProjectInvite.fromJson).toList(growable: false);

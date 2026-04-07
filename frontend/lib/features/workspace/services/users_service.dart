@@ -9,6 +9,7 @@ class UsersService {
   final ApiClient _apiClient;
 
   Future<AppUser> getCurrentUser() async {
+    // Refreshing the current user keeps local session storage in sync with backend profile changes.
     final rawUser = await _apiClient.get('/users/me');
     final user = AppUser.fromJson(rawUser);
     await SessionStorage.updateUser(user);
@@ -65,6 +66,8 @@ class UsersService {
   }
 
   Future<List<ProjectInvite>> listMyInvites() async {
+    // Invite responses are user-scoped because each invited user controls
+    // whether they join or decline a project.
     final rawInvites =
         await _apiClient.get('/users/me/invites') as List<dynamic>;
     return rawInvites.map(ProjectInvite.fromJson).toList(growable: false);

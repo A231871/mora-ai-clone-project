@@ -2,6 +2,9 @@ const mongoose = require('mongoose');
 
 const fileAssetSchema = new mongoose.Schema(
   {
+    // uploadedBy tracks who owns the vault asset.
+    // ownerType/ownerId tracks a primary attachment target such as a project.
+    // taskIds allows the same file to be reused across multiple tasks.
     uploadedBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
