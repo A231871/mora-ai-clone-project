@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
@@ -539,7 +541,7 @@ class _AdminConsoleScreenState extends State<AdminConsoleScreen> {
               : Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    const Text(
                       'Use this hub for system-wide admin search and write workflows. Outside the console, admins only see the same projects and files they personally belong to or own.',
                       style: AppTextStyles.bodySmall,
                     ),
@@ -580,13 +582,24 @@ class _AdminConsoleScreenState extends State<AdminConsoleScreen> {
     required Widget filters,
     required Widget list,
   }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        filters,
-        const SizedBox(height: AppSpacing.md),
-        Expanded(child: list),
-      ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final maxFilterPanelHeight = constraints.maxHeight.isFinite
+            ? math.max(160.0, constraints.maxHeight * 0.48)
+            : double.infinity;
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ConstrainedBox(
+              constraints: BoxConstraints(maxHeight: maxFilterPanelHeight),
+              child: filters,
+            ),
+            const SizedBox(height: AppSpacing.md),
+            Expanded(child: list),
+          ],
+        );
+      },
     );
   }
 
@@ -689,6 +702,7 @@ class _AdminConsoleScreenState extends State<AdminConsoleScreen> {
                   title: 'No Users Found',
                   message:
                       'Adjust the filters or create a user from the admin console.',
+                  adaptiveToConstraints: true,
                 )
               : ListView.separated(
                   itemCount: _users.length,
@@ -781,7 +795,10 @@ class _AdminConsoleScreenState extends State<AdminConsoleScreen> {
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
           backgroundColor: AppColors.bgCard,
-          title: Text('Create User', style: AppTextStyles.titleMedium),
+          title: const Text(
+            'Create User',
+            style: AppTextStyles.titleMedium,
+          ),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -892,7 +909,10 @@ class _AdminConsoleScreenState extends State<AdminConsoleScreen> {
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
           backgroundColor: AppColors.bgCard,
-          title: Text('Edit User', style: AppTextStyles.titleMedium),
+          title: const Text(
+            'Edit User',
+            style: AppTextStyles.titleMedium,
+          ),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -1185,6 +1205,7 @@ class _AdminConsoleScreenState extends State<AdminConsoleScreen> {
                   title: 'No Projects Found',
                   message:
                       'Adjust the filters or create a project from the admin console.',
+                  adaptiveToConstraints: true,
                 )
               : ListView.separated(
                   itemCount: _projects.length,
@@ -1285,7 +1306,10 @@ class _AdminConsoleScreenState extends State<AdminConsoleScreen> {
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
           backgroundColor: AppColors.bgCard,
-          title: Text('Create Project', style: AppTextStyles.titleMedium),
+          title: const Text(
+            'Create Project',
+            style: AppTextStyles.titleMedium,
+          ),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -1408,7 +1432,10 @@ class _AdminConsoleScreenState extends State<AdminConsoleScreen> {
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
           backgroundColor: AppColors.bgCard,
-          title: Text('Edit Project', style: AppTextStyles.titleMedium),
+          title: const Text(
+            'Edit Project',
+            style: AppTextStyles.titleMedium,
+          ),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -1565,10 +1592,13 @@ class _AdminConsoleScreenState extends State<AdminConsoleScreen> {
                     ],
                   ),
                   const SizedBox(height: AppSpacing.md),
-                  Text('Accepted Members', style: AppTextStyles.titleMedium),
+                  const Text(
+                    'Accepted Members',
+                    style: AppTextStyles.titleMedium,
+                  ),
                   const SizedBox(height: AppSpacing.sm),
                   if (detail.members.isEmpty)
-                    Text(
+                    const Text(
                       'No accepted members yet.',
                       style: AppTextStyles.bodySmall,
                     )
@@ -1608,7 +1638,7 @@ class _AdminConsoleScreenState extends State<AdminConsoleScreen> {
                   const SizedBox(height: AppSpacing.md),
                   Row(
                     children: [
-                      Expanded(
+                      const Expanded(
                         child: Text(
                           'Pending Invitations',
                           style: AppTextStyles.titleMedium,
@@ -1630,7 +1660,7 @@ class _AdminConsoleScreenState extends State<AdminConsoleScreen> {
                   ),
                   const SizedBox(height: AppSpacing.sm),
                   if (detail.pendingInvites.isEmpty)
-                    Text(
+                    const Text(
                       'No pending invites.',
                       style: AppTextStyles.bodySmall,
                     )
@@ -1707,7 +1737,10 @@ class _AdminConsoleScreenState extends State<AdminConsoleScreen> {
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
           backgroundColor: AppColors.bgCard,
-          title: Text('Add Project Member', style: AppTextStyles.titleMedium),
+          title: const Text(
+            'Add Project Member',
+            style: AppTextStyles.titleMedium,
+          ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -1786,8 +1819,10 @@ class _AdminConsoleScreenState extends State<AdminConsoleScreen> {
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
           backgroundColor: AppColors.bgCard,
-          title:
-              Text('Create Project Invite', style: AppTextStyles.titleMedium),
+          title: const Text(
+            'Create Project Invite',
+            style: AppTextStyles.titleMedium,
+          ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -1867,7 +1902,10 @@ class _AdminConsoleScreenState extends State<AdminConsoleScreen> {
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
           backgroundColor: AppColors.bgCard,
-          title: Text('Update Member Role', style: AppTextStyles.titleMedium),
+          title: const Text(
+            'Update Member Role',
+            style: AppTextStyles.titleMedium,
+          ),
           content: DropdownButtonFormField<String>(
             initialValue: role,
             dropdownColor: AppColors.bgCard,
@@ -1986,111 +2024,147 @@ class _AdminConsoleScreenState extends State<AdminConsoleScreen> {
               ),
             ),
             const SizedBox(height: AppSpacing.md),
-            Wrap(
-              spacing: AppSpacing.md,
-              runSpacing: AppSpacing.md,
-              children: [
-                SizedBox(
-                  width: 220,
-                  child: DropdownButtonFormField<String?>(
-                    initialValue: _nullableDropdownValue(_taskProjectId),
-                    dropdownColor: AppColors.bgCard,
-                    decoration: const InputDecoration(labelText: 'Project'),
-                    items: [
-                      const DropdownMenuItem<String?>(
-                        value: null,
-                        child: Text('ALL PROJECTS'),
-                      ),
-                      ..._projectDirectory.map(
-                        (project) => DropdownMenuItem<String?>(
-                          value: project.id,
-                          child: Text(project.name),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final isCompactFilterWidth = constraints.maxWidth < 520;
+                final compactWidth = constraints.maxWidth;
+                final projectWidth =
+                    isCompactFilterWidth ? compactWidth : 220.0;
+                final metaWidth = isCompactFilterWidth ? compactWidth : 180.0;
+                final creatorWidth =
+                    isCompactFilterWidth ? compactWidth : 220.0;
+
+                return Wrap(
+                  spacing: AppSpacing.md,
+                  runSpacing: AppSpacing.md,
+                  children: [
+                    SizedBox(
+                      width: projectWidth,
+                      child: ClipRect(
+                        child: DropdownButtonFormField<String?>(
+                          initialValue: _nullableDropdownValue(_taskProjectId),
+                          dropdownColor: AppColors.bgCard,
+                          decoration:
+                              const InputDecoration(labelText: 'Project'),
+                          items: [
+                            const DropdownMenuItem<String?>(
+                              value: null,
+                              child: Text('ALL PROJECTS'),
+                            ),
+                            ..._projectDirectory.map(
+                              (project) => DropdownMenuItem<String?>(
+                                value: project.id,
+                                child: Text(project.name),
+                              ),
+                            ),
+                          ],
+                          onChanged: (value) {
+                            setState(() => _taskProjectId = value);
+                            _loadTasks();
+                          },
                         ),
                       ),
-                    ],
-                    onChanged: (value) {
-                      setState(() => _taskProjectId = value);
-                      _loadTasks();
-                    },
-                  ),
-                ),
-                SizedBox(
-                  width: 180,
-                  child: DropdownButtonFormField<String?>(
-                    initialValue: _taskStatus,
-                    dropdownColor: AppColors.bgCard,
-                    decoration: const InputDecoration(labelText: 'Status'),
-                    items: const [
-                      DropdownMenuItem(value: 'all', child: Text('ALL')),
-                      DropdownMenuItem(value: 'todo', child: Text('TODO')),
-                      DropdownMenuItem(
-                        value: 'in_progress',
-                        child: Text('IN PROGRESS'),
-                      ),
-                      DropdownMenuItem(value: 'done', child: Text('DONE')),
-                    ],
-                    onChanged: (value) {
-                      if (value == null) {
-                        return;
-                      }
-                      setState(() => _taskStatus = value);
-                      _loadTasks();
-                    },
-                  ),
-                ),
-                SizedBox(
-                  width: 180,
-                  child: DropdownButtonFormField<String>(
-                    initialValue: _taskPriority,
-                    dropdownColor: AppColors.bgCard,
-                    decoration: const InputDecoration(labelText: 'Priority'),
-                    items: const [
-                      DropdownMenuItem(value: 'all', child: Text('ALL')),
-                      DropdownMenuItem(value: 'low', child: Text('LOW')),
-                      DropdownMenuItem(value: 'medium', child: Text('MEDIUM')),
-                      DropdownMenuItem(value: 'high', child: Text('HIGH')),
-                    ],
-                    onChanged: (value) {
-                      if (value == null) {
-                        return;
-                      }
-                      setState(() => _taskPriority = value);
-                      _loadTasks();
-                    },
-                  ),
-                ),
-                SizedBox(
-                  width: 220,
-                  child: DropdownButtonFormField<String?>(
-                    initialValue: _nullableDropdownValue(_taskCreatorId),
-                    dropdownColor: AppColors.bgCard,
-                    decoration: const InputDecoration(labelText: 'Creator'),
-                    items: [
-                      const DropdownMenuItem<String?>(
-                        value: null,
-                        child: Text('ALL CREATORS'),
-                      ),
-                      ..._userDirectory.map(
-                        (user) => DropdownMenuItem<String?>(
-                          value: user.id,
-                          child: Text(user.resolvedDisplayName),
+                    ),
+                    SizedBox(
+                      width: metaWidth,
+                      child: ClipRect(
+                        child: DropdownButtonFormField<String?>(
+                          initialValue: _taskStatus,
+                          dropdownColor: AppColors.bgCard,
+                          decoration:
+                              const InputDecoration(labelText: 'Status'),
+                          items: const [
+                            DropdownMenuItem(value: 'all', child: Text('ALL')),
+                            DropdownMenuItem(
+                              value: 'todo',
+                              child: Text('TODO'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'in_progress',
+                              child: Text('IN PROGRESS'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'done',
+                              child: Text('DONE'),
+                            ),
+                          ],
+                          onChanged: (value) {
+                            if (value == null) {
+                              return;
+                            }
+                            setState(() => _taskStatus = value);
+                            _loadTasks();
+                          },
                         ),
                       ),
-                    ],
-                    onChanged: (value) {
-                      setState(() => _taskCreatorId = value);
-                      _loadTasks();
-                    },
-                  ),
-                ),
-                SizedBox(
-                  width: 220,
-                  child: MechaButton(
-                    label: 'CREATE TASK',
-                    onTap: _showCreateTaskDialog,
-                  ),
-                ),
-              ],
+                    ),
+                    SizedBox(
+                      width: metaWidth,
+                      child: ClipRect(
+                        child: DropdownButtonFormField<String>(
+                          initialValue: _taskPriority,
+                          dropdownColor: AppColors.bgCard,
+                          decoration:
+                              const InputDecoration(labelText: 'Priority'),
+                          items: const [
+                            DropdownMenuItem(value: 'all', child: Text('ALL')),
+                            DropdownMenuItem(value: 'low', child: Text('LOW')),
+                            DropdownMenuItem(
+                              value: 'medium',
+                              child: Text('MEDIUM'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'high',
+                              child: Text('HIGH'),
+                            ),
+                          ],
+                          onChanged: (value) {
+                            if (value == null) {
+                              return;
+                            }
+                            setState(() => _taskPriority = value);
+                            _loadTasks();
+                          },
+                        ),
+                      ),
+                    ),
+                    SizedBox(
+                      width: creatorWidth,
+                      child: ClipRect(
+                        child: DropdownButtonFormField<String?>(
+                          initialValue: _nullableDropdownValue(_taskCreatorId),
+                          dropdownColor: AppColors.bgCard,
+                          decoration:
+                              const InputDecoration(labelText: 'Creator'),
+                          items: [
+                            const DropdownMenuItem<String?>(
+                              value: null,
+                              child: Text('ALL CREATORS'),
+                            ),
+                            ..._userDirectory.map(
+                              (user) => DropdownMenuItem<String?>(
+                                value: user.id,
+                                child: Text(user.resolvedDisplayName),
+                              ),
+                            ),
+                          ],
+                          onChanged: (value) {
+                            setState(() => _taskCreatorId = value);
+                            _loadTasks();
+                          },
+                        ),
+                      ),
+                    ),
+                    SizedBox(
+                      width: creatorWidth,
+                      child: MechaButton(
+                        label: 'CREATE TASK',
+                        onTap: _showCreateTaskDialog,
+                      ),
+                    ),
+                  ],
+                );
+              },
             ),
           ],
         ),
@@ -2103,6 +2177,7 @@ class _AdminConsoleScreenState extends State<AdminConsoleScreen> {
                   title: 'No Tasks Found',
                   message:
                       'Adjust the filters or create a task from the admin console.',
+                  adaptiveToConstraints: true,
                 )
               : ListView.separated(
                   itemCount: _tasks.length,
@@ -2522,6 +2597,7 @@ class _AdminConsoleScreenState extends State<AdminConsoleScreen> {
                   title: 'No Tags Found',
                   message:
                       'Adjust the filters or create a tag from the admin console.',
+                  adaptiveToConstraints: true,
                 )
               : ListView.separated(
                   itemCount: _tags.length,
@@ -2871,6 +2947,7 @@ class _AdminConsoleScreenState extends State<AdminConsoleScreen> {
                   title: 'No Files Found',
                   message:
                       'Adjust the filters or upload a file from the admin console.',
+                  adaptiveToConstraints: true,
                 )
               : ListView.separated(
                   itemCount: _files.length,
@@ -3003,6 +3080,7 @@ class _AdminConsoleScreenState extends State<AdminConsoleScreen> {
                   title: 'No Reminders Found',
                   message:
                       'Adjust the filters or create a reminder from the admin console.',
+                  adaptiveToConstraints: true,
                 )
               : ListView.separated(
                   itemCount: _reminders.length,
@@ -3072,7 +3150,10 @@ class _AdminConsoleScreenState extends State<AdminConsoleScreen> {
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
           backgroundColor: AppColors.bgCard,
-          title: Text('Upload File', style: AppTextStyles.titleMedium),
+          title: const Text(
+            'Upload File',
+            style: AppTextStyles.titleMedium,
+          ),
           content: DropdownButtonFormField<String>(
             initialValue: _nullableDropdownValue(uploaderId),
             dropdownColor: AppColors.bgCard,
@@ -3181,7 +3262,10 @@ class _AdminConsoleScreenState extends State<AdminConsoleScreen> {
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
           backgroundColor: AppColors.bgCard,
-          title: Text('Edit File', style: AppTextStyles.titleMedium),
+          title: const Text(
+            'Edit File',
+            style: AppTextStyles.titleMedium,
+          ),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,

@@ -246,7 +246,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           spacing: AppSpacing.sm,
                           runSpacing: AppSpacing.sm,
                           children: [
-                            KpiChip(label: 'Session', value: 'ACTIVE'),
+                            const KpiChip(label: 'Session', value: 'ACTIVE'),
                             KpiChip(
                               label: 'Pending Invites',
                               value: '${_pendingInvites.length}',
@@ -270,7 +270,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Identity', style: AppTextStyles.titleMedium),
+                      const Text(
+                        'Identity',
+                        style: AppTextStyles.titleMedium,
+                      ),
                       const SizedBox(height: AppSpacing.md),
                       MechaTextField(
                         label: 'DISPLAY NAME',
@@ -285,12 +288,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         readOnly: true,
                       ),
                       const SizedBox(height: AppSpacing.xs),
-                      Text(
+                      const Text(
                         'Email stays locked until account verification and provider-safe email change flows exist.',
                         style: AppTextStyles.bodySmall,
                       ),
                       const SizedBox(height: AppSpacing.md),
-                      Text('BIO', style: AppTextStyles.caption),
+                      const Text('BIO', style: AppTextStyles.caption),
                       const SizedBox(height: AppSpacing.xs),
                       TextField(
                         controller: _bioController,
@@ -314,13 +317,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
+                      const Text(
                         'Pending Invitations',
                         style: AppTextStyles.titleMedium,
                       ),
                       const SizedBox(height: AppSpacing.sm),
                       if (_pendingInvites.isEmpty)
-                        Text(
+                        const Text(
                           'No pending project invitations right now.',
                           style: AppTextStyles.bodySmall,
                         )
@@ -356,10 +359,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Session Controls',
-                          style: AppTextStyles.titleMedium),
+                      const Text(
+                        'Session Controls',
+                        style: AppTextStyles.titleMedium,
+                      ),
                       const SizedBox(height: AppSpacing.xs),
-                      Text(
+                      const Text(
                         'Use a local logout for this device, or revoke every active refresh token server-side.',
                         style: AppTextStyles.bodySmall,
                       ),

@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -110,7 +112,7 @@ class _FilesVaultScreenState extends State<FilesVaultScreen> {
         'jpeg',
         'pdf',
         'doc',
-        'docx'
+        'docx',
       ],
     );
 
@@ -233,194 +235,266 @@ class _FilesVaultScreenState extends State<FilesVaultScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          const Text(
             'Search uploaded assets, filter by kind, and keep reusable files ready for task attachment.',
             style: AppTextStyles.bodySmall,
           ),
           const SizedBox(height: AppSpacing.md),
-          ExpandableFilterPanel(
-            title: 'Search & Filters',
-            summary: _fileFiltersSummary,
-            expanded: _filtersExpanded,
-            onExpandedChanged: (expanded) =>
-                setState(() => _filtersExpanded = expanded),
-            collapsedHint: 'Tap to search and filter your vault.',
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                TextField(
-                  controller: _searchController,
-                  onChanged: (_) => setState(() {}),
-                  style: AppTextStyles.bodyMedium,
-                  decoration: const InputDecoration(
-                    hintText: 'Search file name, kind, or owner',
-                    prefixIcon: Icon(Icons.search, color: AppColors.primary),
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.md),
-                Wrap(
-                  spacing: AppSpacing.sm,
-                  runSpacing: AppSpacing.sm,
+          Expanded(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final maxFilterPanelHeight = constraints.maxHeight.isFinite
+                    ? math.max(160.0, constraints.maxHeight * 0.48)
+                    : double.infinity;
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    for (final kind in const <String>[
-                      'all',
-                      'image',
-                      'pdf',
-                      'doc',
-                      'docx'
-                    ])
-                      ChoiceChip(
-                        label: Text(kind.toUpperCase()),
-                        selected: _selectedKind == kind,
-                        onSelected: (_) {
-                          setState(() => _selectedKind = kind);
-                          _loadFiles();
-                        },
-                        selectedColor: AppColors.primary.withValues(alpha: 0.3),
-                        backgroundColor: AppColors.bgCard,
-                        side: BorderSide(
-                          color: _selectedKind == kind
-                              ? AppColors.primary
-                              : AppColors.textSecondary.withValues(alpha: 0.4),
-                        ),
-                        labelStyle: AppTextStyles.caption.copyWith(
-                          color: _selectedKind == kind
-                              ? AppColors.textPrimary
-                              : AppColors.textSecondary,
+                    ConstrainedBox(
+                      constraints: BoxConstraints(
+                        maxHeight: maxFilterPanelHeight,
+                      ),
+                      child: ExpandableFilterPanel(
+                        title: 'Search & Filters',
+                        summary: _fileFiltersSummary,
+                        expanded: _filtersExpanded,
+                        onExpandedChanged: (expanded) =>
+                            setState(() => _filtersExpanded = expanded),
+                        collapsedHint: 'Tap to search and filter your vault.',
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            TextField(
+                              controller: _searchController,
+                              onChanged: (_) => setState(() {}),
+                              style: AppTextStyles.bodyMedium,
+                              decoration: const InputDecoration(
+                                hintText: 'Search file name, kind, or owner',
+                                prefixIcon: Icon(
+                                  Icons.search,
+                                  color: AppColors.primary,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: AppSpacing.md),
+                            Wrap(
+                              spacing: AppSpacing.sm,
+                              runSpacing: AppSpacing.sm,
+                              children: [
+                                for (final kind in const <String>[
+                                  'all',
+                                  'image',
+                                  'pdf',
+                                  'doc',
+                                  'docx',
+                                ])
+                                  ChoiceChip(
+                                    label: Text(kind.toUpperCase()),
+                                    selected: _selectedKind == kind,
+                                    onSelected: (_) {
+                                      setState(() => _selectedKind = kind);
+                                      _loadFiles();
+                                    },
+                                    selectedColor: AppColors.primary.withValues(
+                                      alpha: 0.3,
+                                    ),
+                                    backgroundColor: AppColors.bgCard,
+                                    side: BorderSide(
+                                      color: _selectedKind == kind
+                                          ? AppColors.primary
+                                          : AppColors.textSecondary.withValues(
+                                              alpha: 0.4,
+                                            ),
+                                    ),
+                                    labelStyle: AppTextStyles.caption.copyWith(
+                                      color: _selectedKind == kind
+                                          ? AppColors.textPrimary
+                                          : AppColors.textSecondary,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ],
                         ),
                       ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          Expanded(
-            child: _loading
-                ? const Center(child: CircularProgressIndicator())
-                : _visibleFiles.isEmpty
-                    ? Center(
-                        child: WorkspaceEmptyState(
-                          icon: Icons.folder_open_outlined,
-                          title: 'No Matching Files',
-                          message: _files.isEmpty
-                              ? 'Upload images or documents here. New task flows can attach from this pool.'
-                              : 'Try a different search term or file kind filter.',
-                          actionLabel: _canManageVault ? 'Upload File' : null,
-                          onAction: _canManageVault ? _pickAndUpload : null,
-                        ),
-                      )
-                    : ListView.separated(
-                        itemCount: _visibleFiles.length,
-                        separatorBuilder: (_, __) =>
-                            const SizedBox(height: AppSpacing.md),
-                        itemBuilder: (context, index) {
-                          final file = _visibleFiles[index];
-                          final ownerLabel = file.ownerProject?.name ??
-                              file.ownerTask?.title ??
-                              file.ownerUser?.resolvedDisplayName;
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    Expanded(
+                      child: _loading
+                          ? const Center(child: CircularProgressIndicator())
+                          : _visibleFiles.isEmpty
+                              ? WorkspaceEmptyState(
+                                  icon: Icons.folder_open_outlined,
+                                  title: 'No Matching Files',
+                                  message: _files.isEmpty
+                                      ? 'Upload images or documents here. New task flows can attach from this pool.'
+                                      : 'Try a different search term or file kind filter.',
+                                  actionLabel:
+                                      _canManageVault ? 'Upload File' : null,
+                                  onAction:
+                                      _canManageVault ? _pickAndUpload : null,
+                                  adaptiveToConstraints: true,
+                                )
+                              : ListView.separated(
+                                  itemCount: _visibleFiles.length,
+                                  separatorBuilder: (_, __) =>
+                                      const SizedBox(height: AppSpacing.md),
+                                  itemBuilder: (context, index) {
+                                    final file = _visibleFiles[index];
+                                    final ownerLabel =
+                                        file.ownerProject?.name ??
+                                            file.ownerTask?.title ??
+                                            file.ownerUser?.resolvedDisplayName;
+                                    final taskLinkLabel =
+                                        file.attachedTaskCount == 0
+                                            ? null
+                                            : file.attachedTaskCount == 1
+                                                ? 'Linked to 1 task'
+                                                : 'Linked to ${file.attachedTaskCount} tasks';
 
-                          return MechaPanel(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    _FilePreview(file: file),
-                                    const SizedBox(width: AppSpacing.md),
-                                    Expanded(
+                                    return MechaPanel(
                                       child: Column(
                                         crossAxisAlignment:
                                             CrossAxisAlignment.start,
                                         children: [
-                                          Text(
-                                            file.originalName,
-                                            style: AppTextStyles.titleMedium,
-                                          ),
-                                          const SizedBox(height: AppSpacing.xs),
-                                          Text(
-                                            '${file.kind.toUpperCase()} · ${formatBytes(file.size)}',
-                                            style: AppTextStyles.caption,
-                                          ),
-                                          const SizedBox(height: AppSpacing.xs),
-                                          Text(
-                                            'Added ${formatShortDateTime(file.createdAt)}'
-                                            '${file.uploader != null ? ' · uploader ${file.uploader!.resolvedDisplayName}' : ''}',
-                                            style: AppTextStyles.bodySmall,
-                                          ),
-                                          if (file.ownerType != null &&
-                                              file.ownerType != 'unassigned')
-                                            Padding(
-                                              padding: const EdgeInsets.only(
-                                                top: AppSpacing.xs,
+                                          Row(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              _FilePreview(file: file),
+                                              const SizedBox(
+                                                width: AppSpacing.md,
                                               ),
-                                              child: Text(
-                                                ownerLabel == null
-                                                    ? 'Attached to ${file.ownerType}'
-                                                    : 'Attached to ${file.ownerType}: $ownerLabel',
-                                                style: AppTextStyles.caption
-                                                    .copyWith(
+                                              Expanded(
+                                                child: Column(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
+                                                      file.originalName,
+                                                      style: AppTextStyles
+                                                          .titleMedium,
+                                                    ),
+                                                    const SizedBox(
+                                                      height: AppSpacing.xs,
+                                                    ),
+                                                    Text(
+                                                      '${file.kind.toUpperCase()} · ${formatBytes(file.size)}',
+                                                      style:
+                                                          AppTextStyles.caption,
+                                                    ),
+                                                    const SizedBox(
+                                                      height: AppSpacing.xs,
+                                                    ),
+                                                    Text(
+                                                      'Added ${formatShortDateTime(file.createdAt)}'
+                                                      '${file.uploader != null ? ' · uploader ${file.uploader!.resolvedDisplayName}' : ''}',
+                                                      style: AppTextStyles
+                                                          .bodySmall,
+                                                    ),
+                                                    if (file.ownerType !=
+                                                            null &&
+                                                        file.ownerType !=
+                                                            'unassigned')
+                                                      Padding(
+                                                        padding:
+                                                            const EdgeInsets
+                                                                .only(
+                                                          top: AppSpacing.xs,
+                                                        ),
+                                                        child: Text(
+                                                          ownerLabel == null
+                                                              ? 'Attached to ${file.ownerType}'
+                                                              : 'Attached to ${file.ownerType}: $ownerLabel',
+                                                          style: AppTextStyles
+                                                              .caption
+                                                              .copyWith(
+                                                            color: AppColors
+                                                                .primary,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    if (taskLinkLabel != null)
+                                                      Padding(
+                                                        padding:
+                                                            const EdgeInsets.only(
+                                                          top: AppSpacing.xs,
+                                                        ),
+                                                        child: Text(
+                                                          taskLinkLabel,
+                                                          style: AppTextStyles
+                                                              .caption
+                                                              .copyWith(
+                                                            color: AppColors
+                                                                .accent,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          const SizedBox(height: AppSpacing.md),
+                                          Row(
+                                            children: [
+                                              TextButton.icon(
+                                                onPressed: () => _copyUrl(file),
+                                                icon: const Icon(
+                                                  Icons.link,
+                                                  size: 16,
                                                   color: AppColors.primary,
                                                 ),
+                                                label: Text(
+                                                  'COPY URL',
+                                                  style: AppTextStyles.caption
+                                                      .copyWith(
+                                                    color: AppColors.primary,
+                                                  ),
+                                                ),
                                               ),
-                                            ),
+                                              const Spacer(),
+                                              if (_canManageVault)
+                                                TextButton.icon(
+                                                  onPressed: _busyFileId ==
+                                                          file.id
+                                                      ? null
+                                                      : () => _deleteFile(file),
+                                                  icon: _busyFileId == file.id
+                                                      ? const SizedBox(
+                                                          width: 16,
+                                                          height: 16,
+                                                          child:
+                                                              CircularProgressIndicator(
+                                                            strokeWidth: 2,
+                                                          ),
+                                                        )
+                                                      : const Icon(
+                                                          Icons.delete_outline,
+                                                          size: 16,
+                                                          color:
+                                                              Colors.redAccent,
+                                                        ),
+                                                  label: Text(
+                                                    'DELETE',
+                                                    style: AppTextStyles.caption
+                                                        .copyWith(
+                                                      color: Colors.redAccent,
+                                                    ),
+                                                  ),
+                                                ),
+                                            ],
+                                          ),
                                         ],
                                       ),
-                                    ),
-                                  ],
+                                    );
+                                  },
                                 ),
-                                const SizedBox(height: AppSpacing.md),
-                                Row(
-                                  children: [
-                                    TextButton.icon(
-                                      onPressed: () => _copyUrl(file),
-                                      icon: const Icon(
-                                        Icons.link,
-                                        size: 16,
-                                        color: AppColors.primary,
-                                      ),
-                                      label: Text(
-                                        'COPY URL',
-                                        style: AppTextStyles.caption.copyWith(
-                                          color: AppColors.primary,
-                                        ),
-                                      ),
-                                    ),
-                                    const Spacer(),
-                                    if (_canManageVault)
-                                      TextButton.icon(
-                                        onPressed: _busyFileId == file.id
-                                            ? null
-                                            : () => _deleteFile(file),
-                                        icon: _busyFileId == file.id
-                                            ? const SizedBox(
-                                                width: 16,
-                                                height: 16,
-                                                child:
-                                                    CircularProgressIndicator(
-                                                  strokeWidth: 2,
-                                                ),
-                                              )
-                                            : const Icon(
-                                                Icons.delete_outline,
-                                                size: 16,
-                                                color: Colors.redAccent,
-                                              ),
-                                        label: Text(
-                                          'DELETE',
-                                          style: AppTextStyles.caption.copyWith(
-                                            color: Colors.redAccent,
-                                          ),
-                                        ),
-                                      ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          );
-                        },
-                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
           ),
         ],
       ),

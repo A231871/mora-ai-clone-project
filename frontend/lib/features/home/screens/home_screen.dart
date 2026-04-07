@@ -341,12 +341,12 @@ class _HomeScreenState extends State<HomeScreen> {
                                   child: Column(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      Text(
+                                      const Text(
                                         'MISSION LAUNCHER',
                                         style: AppTextStyles.sectionLabel,
                                       ),
                                       const SizedBox(height: AppSpacing.xs),
-                                      Text(
+                                      const Text(
                                         'Workspace modules route from home while chat and reminders stay live.',
                                         style: AppTextStyles.bodySmall,
                                         textAlign: TextAlign.center,

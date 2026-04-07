@@ -39,6 +39,22 @@ class ProjectsService {
     return WorkspaceProject.fromJson(rawProject);
   }
 
+  Future<ProjectAnalyticsOverview> getAnalyticsOverview(
+    String projectId,
+  ) async {
+    final rawAnalytics =
+        await _apiClient.get('/projects/$projectId/analytics/overview');
+    return ProjectAnalyticsOverview.fromJson(rawAnalytics);
+  }
+
+  Future<ProjectAnalyticsWorkload> getAnalyticsWorkload(
+    String projectId,
+  ) async {
+    final rawAnalytics =
+        await _apiClient.get('/projects/$projectId/analytics/workload');
+    return ProjectAnalyticsWorkload.fromJson(rawAnalytics);
+  }
+
   Future<WorkspaceProject> updateProject(
     String projectId, {
     String? name,

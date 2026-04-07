@@ -4,6 +4,7 @@ const asyncHandler = require('../utils/asyncHandler');
 const ApiError = require('../utils/apiError');
 const {
   buildPublicFileUrl,
+  getFileAttachedTaskIds,
   inferFileKind,
   removePhysicalFiles,
 } = require('../services/file.service');
@@ -51,11 +52,20 @@ const listFiles = asyncHandler(async (req, res) => {
   }
 
   if (ownerType) {
-    query.ownerType = ownerType;
+    if (ownerType !== 'task') {
+      query.ownerType = ownerType;
+    }
   }
 
   if (ownerId) {
-    query.ownerId = ownerId;
+    if (ownerType === 'task') {
+      query.$or = [
+        { ownerType: 'task', ownerId },
+        { taskIds: ownerId },
+      ];
+    } else {
+      query.ownerId = ownerId;
+    }
   }
 
   if (ownerType && ownerId) {
@@ -100,6 +110,7 @@ const uploadFile = asyncHandler(async (req, res) => {
     uploadedBy: req.user._id,
     ownerType,
     ownerId,
+    taskIds: ownerType === 'task' && ownerId ? [ownerId] : [],
     kind,
     originalName: req.file.originalname,
     storedName: req.file.filename,
@@ -109,6 +120,10 @@ const uploadFile = asyncHandler(async (req, res) => {
     publicUrl: buildPublicFileUrl(req, req.file.filename),
     attachedAt: ownerType === 'unassigned' ? null : new Date(),
   });
+
+  if (ownerType === 'task' && ownerId) {
+    await Task.updateOne({ _id: ownerId }, { $addToSet: { fileIds: fileAsset._id } });
+  }
 
   res.status(201).json({
     success: true,
@@ -136,9 +151,10 @@ const deleteFile = asyncHandler(async (req, res) => {
     );
   }
 
-  if (fileAsset.ownerType === 'task' && fileAsset.ownerId) {
-    await Task.updateOne(
-      { _id: fileAsset.ownerId },
+  const linkedTaskIds = getFileAttachedTaskIds(fileAsset);
+  if (linkedTaskIds.length > 0) {
+    await Task.updateMany(
+      { _id: { $in: linkedTaskIds } },
       { $pull: { fileIds: fileAsset._id } },
     );
   }

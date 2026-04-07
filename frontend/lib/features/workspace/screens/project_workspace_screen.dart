@@ -40,6 +40,8 @@ class _ProjectWorkspaceScreenState extends State<ProjectWorkspaceScreen> {
   List<ProjectMember> _members = const <ProjectMember>[];
   List<ProjectInvite> _pendingInvites = const <ProjectInvite>[];
   List<TaskItem> _tasks = const <TaskItem>[];
+  ProjectAnalyticsOverview? _analyticsOverview;
+  ProjectAnalyticsWorkload? _analyticsWorkload;
   bool _loading = true;
   String? _busyId;
   int _selectedTab = 0;
@@ -77,6 +79,8 @@ class _ProjectWorkspaceScreenState extends State<ProjectWorkspaceScreen> {
         _projectsService.listTags(widget.projectId),
         _projectsService.listMembers(widget.projectId),
         _tasksService.listTasks(projectId: widget.projectId),
+        _projectsService.getAnalyticsOverview(widget.projectId),
+        _projectsService.getAnalyticsWorkload(widget.projectId),
       ]);
       final project = results[0] as WorkspaceProject;
       List<ProjectInvite> pendingInvites = const <ProjectInvite>[];
@@ -102,6 +106,8 @@ class _ProjectWorkspaceScreenState extends State<ProjectWorkspaceScreen> {
         _members = results[2] as List<ProjectMember>;
         _pendingInvites = pendingInvites;
         _tasks = results[3] as List<TaskItem>;
+        _analyticsOverview = results[4] as ProjectAnalyticsOverview;
+        _analyticsWorkload = results[5] as ProjectAnalyticsWorkload;
         _loading = false;
         _busyId = null;
       });
@@ -136,7 +142,10 @@ class _ProjectWorkspaceScreenState extends State<ProjectWorkspaceScreen> {
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
           backgroundColor: AppColors.bgCard,
-          title: Text('Update Project', style: AppTextStyles.titleMedium),
+          title: const Text(
+            'Update Project',
+            style: AppTextStyles.titleMedium,
+          ),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -239,7 +248,7 @@ class _ProjectWorkspaceScreenState extends State<ProjectWorkspaceScreen> {
         backgroundColor: AppColors.bgCard,
         title:
             Text('Delete ${project.name}?', style: AppTextStyles.titleMedium),
-        content: Text(
+        content: const Text(
           'This permanently removes the full workspace tree for this project.',
           style: AppTextStyles.bodyMedium,
         ),
@@ -294,8 +303,12 @@ class _ProjectWorkspaceScreenState extends State<ProjectWorkspaceScreen> {
     final nameController = TextEditingController(text: task?.title ?? '');
     final descriptionController =
         TextEditingController(text: task?.description ?? '');
+    final estimateController = TextEditingController(
+      text: task?.estimatedMinutes?.toString() ?? '',
+    );
     var status = task?.status ?? 'todo';
     var priority = task?.priority ?? 'medium';
+    var dueDate = task?.dueDate;
     var reminderAt = task?.reminderAt;
     final selectedAssigneeIds = <String>{
       ...task?.assigneeIds ?? const <String>[]
@@ -305,7 +318,7 @@ class _ProjectWorkspaceScreenState extends State<ProjectWorkspaceScreen> {
 
     List<FileAsset> availableFiles = const <FileAsset>[];
     try {
-      availableFiles = await _filesService.listFiles(ownerType: 'unassigned');
+      availableFiles = await _filesService.listFiles();
     } catch (_) {
       availableFiles = const <FileAsset>[];
     }
@@ -348,9 +361,9 @@ class _ProjectWorkspaceScreenState extends State<ProjectWorkspaceScreen> {
                       const InputDecoration(hintText: 'Task description'),
                 ),
                 const SizedBox(height: AppSpacing.md),
-                LayoutBuilder(
-                  builder: (context, constraints) {
-                    final compact = constraints.maxWidth < 420;
+                Builder(
+                  builder: (context) {
+                    final compact = MediaQuery.sizeOf(context).width < 520;
                     final statusField = DropdownButtonFormField<String>(
                       initialValue: status,
                       dropdownColor: AppColors.bgCard,
@@ -408,10 +421,69 @@ class _ProjectWorkspaceScreenState extends State<ProjectWorkspaceScreen> {
                   },
                 ),
                 const SizedBox(height: AppSpacing.md),
-                Text('Assignees', style: AppTextStyles.caption),
+                const Text('Workflow Timing', style: AppTextStyles.caption),
+                const SizedBox(height: AppSpacing.xs),
+                TextField(
+                  controller: estimateController,
+                  keyboardType: TextInputType.number,
+                  style: AppTextStyles.bodyMedium,
+                  decoration: const InputDecoration(
+                    hintText: 'Estimated minutes',
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        dueDate == null
+                            ? 'No due date set'
+                            : formatShortDate(dueDate),
+                        style: AppTextStyles.bodySmall,
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () async {
+                        final date = await showDatePicker(
+                          context: context,
+                          firstDate: DateTime.now().subtract(
+                            const Duration(days: 365),
+                          ),
+                          lastDate:
+                              DateTime.now().add(const Duration(days: 365)),
+                          initialDate: dueDate ?? DateTime.now(),
+                        );
+                        if (date == null) {
+                          return;
+                        }
+
+                        setDialogState(() {
+                          dueDate = DateTime(
+                            date.year,
+                            date.month,
+                            date.day,
+                            23,
+                            59,
+                          );
+                        });
+                      },
+                      icon: const Icon(Icons.event_outlined),
+                    ),
+                    if (dueDate != null)
+                      IconButton(
+                        onPressed: () => setDialogState(() => dueDate = null),
+                        icon: const Icon(
+                          Icons.event_busy_outlined,
+                          color: Colors.redAccent,
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.md),
+                const Text('Assignees', style: AppTextStyles.caption),
                 const SizedBox(height: AppSpacing.xs),
                 if (_assignableMembers.isEmpty)
-                  Text(
+                  const Text(
                     'No accepted project members are available for assignment yet.',
                     style: AppTextStyles.bodySmall,
                   )
@@ -450,7 +522,7 @@ class _ProjectWorkspaceScreenState extends State<ProjectWorkspaceScreen> {
                     ],
                   ),
                 const SizedBox(height: AppSpacing.md),
-                Text('Tags', style: AppTextStyles.caption),
+                const Text('Tags', style: AppTextStyles.caption),
                 const SizedBox(height: AppSpacing.xs),
                 Wrap(
                   spacing: AppSpacing.sm,
@@ -481,7 +553,7 @@ class _ProjectWorkspaceScreenState extends State<ProjectWorkspaceScreen> {
                   ],
                 ),
                 const SizedBox(height: AppSpacing.md),
-                Text('Reminder', style: AppTextStyles.caption),
+                const Text('Reminder', style: AppTextStyles.caption),
                 const SizedBox(height: AppSpacing.xs),
                 Row(
                   children: [
@@ -539,11 +611,11 @@ class _ProjectWorkspaceScreenState extends State<ProjectWorkspaceScreen> {
                   ],
                 ),
                 const SizedBox(height: AppSpacing.md),
-                Text('Attach From Vault', style: AppTextStyles.caption),
+                const Text('Attach From Vault', style: AppTextStyles.caption),
                 const SizedBox(height: AppSpacing.xs),
                 if (fileOptions.isEmpty)
-                  Text(
-                    'No unassigned files available. Upload in Files Vault first.',
+                  const Text(
+                    'No files are available in your vault yet. Upload in Files Vault first.',
                     style: AppTextStyles.bodySmall,
                   )
                 else
@@ -556,7 +628,10 @@ class _ProjectWorkspaceScreenState extends State<ProjectWorkspaceScreen> {
                           label: SizedBox(
                             width: 160,
                             child: Text(
-                              file.originalName,
+                              file.attachedTaskCount > 0 &&
+                                      !selectedFileIds.contains(file.id)
+                                  ? '${file.originalName} (${file.attachedTaskCount} tasks)'
+                                  : file.originalName,
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
@@ -605,6 +680,15 @@ class _ProjectWorkspaceScreenState extends State<ProjectWorkspaceScreen> {
       return;
     }
 
+    final estimateText = estimateController.text.trim();
+    final estimatedMinutes =
+        estimateText.isEmpty ? null : int.tryParse(estimateText);
+    if (estimateText.isNotEmpty &&
+        (estimatedMinutes == null || estimatedMinutes < 0)) {
+      _showMessage('Estimated minutes must be a non-negative whole number.');
+      return;
+    }
+
     setState(() => _busyId = task?.id ?? 'task-create');
     try {
       if (task == null) {
@@ -614,6 +698,8 @@ class _ProjectWorkspaceScreenState extends State<ProjectWorkspaceScreen> {
           description: descriptionController.text.trim(),
           status: status,
           priority: priority,
+          dueDate: dueDate,
+          estimatedMinutes: estimatedMinutes,
           assigneeIds: selectedAssigneeIds.toList(growable: false),
           tagIds: selectedTagIds.toList(growable: false),
           fileIds: selectedFileIds.toList(growable: false),
@@ -627,11 +713,16 @@ class _ProjectWorkspaceScreenState extends State<ProjectWorkspaceScreen> {
           description: descriptionController.text.trim(),
           status: status,
           priority: priority,
+          dueDate: dueDate,
+          estimatedMinutes: estimatedMinutes,
           assigneeIds: selectedAssigneeIds.toList(growable: false),
           tagIds: selectedTagIds.toList(growable: false),
           fileIds: selectedFileIds.toList(growable: false),
           reminderAt: reminderAt,
           clearReminder: reminderAt == null && task.reminderAt != null,
+          clearDueDate: dueDate == null && task.dueDate != null,
+          clearEstimatedMinutes:
+              estimatedMinutes == null && task.estimatedMinutes != null,
         );
         _showMessage('Task updated.', isError: false);
       }
@@ -660,7 +751,7 @@ class _ProjectWorkspaceScreenState extends State<ProjectWorkspaceScreen> {
       builder: (context) => AlertDialog(
         backgroundColor: AppColors.bgCard,
         title: Text('Delete ${task.title}?', style: AppTextStyles.titleMedium),
-        content: Text(
+        content: const Text(
           'This also removes task comments, linked reminder records, and attached task files.',
           style: AppTextStyles.bodyMedium,
         ),
@@ -847,7 +938,7 @@ class _ProjectWorkspaceScreenState extends State<ProjectWorkspaceScreen> {
                     ),
                   ),
                   const SizedBox(height: AppSpacing.sm),
-                  Text(
+                  const Text(
                     'Send a pending invitation by username. Accepted users become project members and can be assigned to tasks.',
                     style: AppTextStyles.bodySmall,
                   ),
@@ -954,6 +1045,68 @@ class _ProjectWorkspaceScreenState extends State<ProjectWorkspaceScreen> {
     }
   }
 
+  String _formatMinutesLabel(int? minutes) {
+    if (minutes == null) {
+      return '--';
+    }
+    if (minutes < 60) {
+      return '${minutes}m';
+    }
+    final hours = minutes ~/ 60;
+    final remainingMinutes = minutes % 60;
+    if (remainingMinutes == 0) {
+      return '${hours}h';
+    }
+    return '${hours}h ${remainingMinutes}m';
+  }
+
+  String _formatCompletionRate(double rate) {
+    return '${(rate * 100).toStringAsFixed(0)}%';
+  }
+
+  Widget _buildAnalyticsBreakdownSection({
+    required String title,
+    required String emptyMessage,
+    required List<AnalyticsBreakdownItem> items,
+  }) {
+    return MechaPanel(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: AppTextStyles.titleMedium),
+          const SizedBox(height: AppSpacing.sm),
+          if (items.isEmpty)
+            Text(emptyMessage, style: AppTextStyles.bodySmall)
+          else
+            Column(
+              children: items
+                  .take(4)
+                  .map(
+                    (item) => Padding(
+                      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              item.label,
+                              style: AppTextStyles.bodyMedium,
+                            ),
+                          ),
+                          Text(
+                            '${item.taskCount} total · ${item.openTaskCount} open',
+                            style: AppTextStyles.caption,
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                  .toList(growable: false),
+            ),
+        ],
+      ),
+    );
+  }
+
   void _showMessage(String message, {bool isError = true}) {
     if (!mounted) {
       return;
@@ -1055,7 +1208,7 @@ class _ProjectWorkspaceScreenState extends State<ProjectWorkspaceScreen> {
                           ),
                           if (_memberUiReadOnly) ...[
                             const SizedBox(height: AppSpacing.md),
-                            Text(
+                            const Text(
                               'Admin inspection keeps this member workspace read-only. Use the Admin Console for project, task, tag, file, and reminder writes.',
                               style: AppTextStyles.bodySmall,
                             ),
@@ -1103,7 +1256,9 @@ class _ProjectWorkspaceScreenState extends State<ProjectWorkspaceScreen> {
   Widget _buildTabContent(WorkspaceProject project) {
     switch (_selectedTab) {
       case 0:
-        final completedTasks =
+        final analyticsOverview = _analyticsOverview;
+        final analyticsWorkload = _analyticsWorkload;
+        final completedTasks = analyticsOverview?.done ??
             _tasks.where((task) => task.status == 'done').length;
         return Column(
           children: [
@@ -1111,7 +1266,10 @@ class _ProjectWorkspaceScreenState extends State<ProjectWorkspaceScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Command Overview', style: AppTextStyles.titleMedium),
+                  const Text(
+                    'Command Overview',
+                    style: AppTextStyles.titleMedium,
+                  ),
                   const SizedBox(height: AppSpacing.sm),
                   Text(
                     _memberUiReadOnly
@@ -1126,17 +1284,34 @@ class _ProjectWorkspaceScreenState extends State<ProjectWorkspaceScreen> {
                     children: [
                       KpiChip(
                         label: 'Completed',
-                        value: '$completedTasks/${_tasks.length}',
+                        value:
+                            '$completedTasks/${analyticsOverview?.total ?? _tasks.length}',
                       ),
                       KpiChip(
                         label: 'In Progress',
                         value:
-                            '${_tasks.where((task) => task.status == 'in_progress').length}',
+                            '${analyticsOverview?.inProgress ?? _tasks.where((task) => task.status == 'in_progress').length}',
                       ),
                       KpiChip(
                         label: 'Owners',
                         value:
                             '${_members.where((member) => member.role == 'owner').length}',
+                      ),
+                      KpiChip(
+                        label: 'Overdue',
+                        value: '${analyticsOverview?.overdue ?? 0}',
+                      ),
+                      KpiChip(
+                        label: 'Due Today',
+                        value: '${analyticsOverview?.dueToday ?? 0}',
+                      ),
+                      KpiChip(
+                        label: 'Completion Rate',
+                        value: analyticsOverview == null
+                            ? '--'
+                            : _formatCompletionRate(
+                                analyticsOverview.completionRate,
+                              ),
                       ),
                     ],
                   ),
@@ -1148,10 +1323,73 @@ class _ProjectWorkspaceScreenState extends State<ProjectWorkspaceScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Default Tags', style: AppTextStyles.titleMedium),
+                  const Text(
+                    'Backend Analytics Snapshot',
+                    style: AppTextStyles.titleMedium,
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  if (analyticsOverview == null) ...[
+                    const Text(
+                      'Analytics are unavailable right now.',
+                      style: AppTextStyles.bodySmall,
+                    ),
+                  ] else ...[
+                    Wrap(
+                      spacing: AppSpacing.sm,
+                      runSpacing: AppSpacing.sm,
+                      children: [
+                        KpiChip(
+                          label: 'Total Tasks',
+                          value: '${analyticsOverview.total}',
+                        ),
+                        KpiChip(
+                          label: 'Todo',
+                          value: '${analyticsOverview.todo}',
+                        ),
+                        KpiChip(
+                          label: 'Done',
+                          value: '${analyticsOverview.done}',
+                        ),
+                        KpiChip(
+                          label: 'Avg Finish Time',
+                          value: analyticsOverview.averageCompletionMinutes ==
+                                  null
+                              ? '--'
+                              : _formatMinutesLabel(
+                                  analyticsOverview.averageCompletionMinutes!
+                                      .round(),
+                                ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            _buildAnalyticsBreakdownSection(
+              title: 'Priority Workload',
+              emptyMessage: 'No priority analytics yet.',
+              items: analyticsWorkload?.priorities ?? const [],
+            ),
+            const SizedBox(height: AppSpacing.md),
+            _buildAnalyticsBreakdownSection(
+              title: 'Assignment Load',
+              emptyMessage: 'No assignee analytics yet.',
+              items: analyticsWorkload?.assignees ?? const [],
+            ),
+            const SizedBox(height: AppSpacing.md),
+            MechaPanel(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Default Tags',
+                    style: AppTextStyles.titleMedium,
+                  ),
                   const SizedBox(height: AppSpacing.sm),
                   if (_tags.isEmpty)
-                    Text(
+                    const Text(
                       'No tags configured yet.',
                       style: AppTextStyles.bodySmall,
                     )
@@ -1170,6 +1408,12 @@ class _ProjectWorkspaceScreenState extends State<ProjectWorkspaceScreen> {
                     ),
                 ],
               ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            _buildAnalyticsBreakdownSection(
+              title: 'Tag Distribution',
+              emptyMessage: 'No tag analytics yet.',
+              items: analyticsWorkload?.tags ?? const [],
             ),
           ],
         );
@@ -1338,10 +1582,13 @@ class _ProjectWorkspaceScreenState extends State<ProjectWorkspaceScreen> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Accepted Members', style: AppTextStyles.titleMedium),
+                  const Text(
+                    'Accepted Members',
+                    style: AppTextStyles.titleMedium,
+                  ),
                   const SizedBox(height: AppSpacing.sm),
                   if (_members.isEmpty)
-                    Text(
+                    const Text(
                       'No accepted members yet.',
                       style: AppTextStyles.bodySmall,
                     )
@@ -1423,13 +1670,13 @@ class _ProjectWorkspaceScreenState extends State<ProjectWorkspaceScreen> {
                     ),
                   if (_canManageMembers) ...[
                     const SizedBox(height: AppSpacing.md),
-                    Text(
+                    const Text(
                       'Pending Invitations',
                       style: AppTextStyles.titleMedium,
                     ),
                     const SizedBox(height: AppSpacing.sm),
                     if (_pendingInvites.isEmpty)
-                      Text(
+                      const Text(
                         'No pending invites right now.',
                         style: AppTextStyles.bodySmall,
                       )
@@ -1545,6 +1792,15 @@ class _TaskCard extends StatelessWidget {
             spacing: AppSpacing.sm,
             runSpacing: AppSpacing.sm,
             children: [
+              if (task.dueDate != null)
+                _MetaBadge(
+                  label: task.isOverdue
+                      ? 'OVERDUE ${formatShortDate(task.dueDate)}'
+                      : 'DUE ${formatShortDate(task.dueDate)}',
+                ),
+              if (task.estimatedMinutes != null)
+                _MetaBadge(
+                    label: 'EST ${_formatMinutes(task.estimatedMinutes)}'),
               if (task.reminderAt != null)
                 _MetaBadge(
                     label: 'REMINDER ${formatShortDate(task.reminderAt)}'),
@@ -1580,6 +1836,21 @@ class _TaskCard extends StatelessWidget {
       ),
     );
   }
+}
+
+String _formatMinutes(int? minutes) {
+  if (minutes == null) {
+    return '--';
+  }
+  if (minutes < 60) {
+    return '${minutes}m';
+  }
+  final hours = minutes ~/ 60;
+  final remainingMinutes = minutes % 60;
+  if (remainingMinutes == 0) {
+    return '${hours}h';
+  }
+  return '${hours}h ${remainingMinutes}m';
 }
 
 class _ColorTagChip extends StatelessWidget {

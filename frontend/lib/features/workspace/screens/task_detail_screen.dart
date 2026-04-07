@@ -6,6 +6,7 @@ import '../../../core/services/api_client.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../shared/models/workspace_models.dart';
 import '../../../shared/utils/formatters.dart';
+import '../../../shared/widgets/kpi_chip.dart';
 import '../../../shared/widgets/mecha_button.dart';
 import '../../../shared/widgets/mecha_panel.dart';
 import '../../../shared/widgets/responsive_action_group.dart';
@@ -35,6 +36,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
   final ProjectsService _projectsService = ProjectsService();
   final FilesService _filesService = FilesService();
   final TextEditingController _commentController = TextEditingController();
+  final TextEditingController _checklistController = TextEditingController();
 
   TaskItem? _task;
   WorkspaceProject? _project;
@@ -42,8 +44,11 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
   List<ProjectMember> _members = const <ProjectMember>[];
   List<ProjectTag> _tags = const <ProjectTag>[];
   List<TaskComment> _comments = const <TaskComment>[];
+  List<TaskChecklistEntry> _checklistItems = const <TaskChecklistEntry>[];
+  List<TaskActivityEntry> _activity = const <TaskActivityEntry>[];
   bool _loading = true;
   bool _submittingComment = false;
+  bool _submittingChecklist = false;
   String? _busyId;
 
   bool get _canManageContent => _project?.canManageContent ?? false;
@@ -59,6 +64,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
   @override
   void dispose() {
     _commentController.dispose();
+    _checklistController.dispose();
     super.dispose();
   }
 
@@ -72,6 +78,8 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
         _projectsService.listMembers(widget.projectId),
         _projectsService.listTags(widget.projectId),
         _tasksService.listComments(widget.taskId),
+        _tasksService.listChecklist(widget.taskId),
+        _tasksService.listActivity(widget.taskId),
       ]);
 
       if (!mounted) {
@@ -85,6 +93,8 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
         _members = results[2] as List<ProjectMember>;
         _tags = results[3] as List<ProjectTag>;
         _comments = results[4] as List<TaskComment>;
+        _checklistItems = results[5] as List<TaskChecklistEntry>;
+        _activity = results[6] as List<TaskActivityEntry>;
         _loading = false;
         _busyId = null;
       });
@@ -111,8 +121,12 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
 
     final titleController = TextEditingController(text: task.title);
     final descriptionController = TextEditingController(text: task.description);
+    final estimateController = TextEditingController(
+      text: task.estimatedMinutes?.toString() ?? '',
+    );
     var status = task.status;
     var priority = task.priority;
+    var dueDate = task.dueDate;
     var reminderAt = task.reminderAt;
     final selectedAssigneeIds = <String>{...task.assigneeIds};
     final selectedTagIds = <String>{...task.tagIds};
@@ -122,7 +136,10 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
           backgroundColor: AppColors.bgCard,
-          title: Text('Update Task', style: AppTextStyles.titleMedium),
+          title: const Text(
+            'Update Task',
+            style: AppTextStyles.titleMedium,
+          ),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -143,9 +160,9 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                       const InputDecoration(hintText: 'Task description'),
                 ),
                 const SizedBox(height: AppSpacing.md),
-                LayoutBuilder(
-                  builder: (context, constraints) {
-                    final compact = constraints.maxWidth < 420;
+                Builder(
+                  builder: (context) {
+                    final compact = MediaQuery.sizeOf(context).width < 520;
                     final statusField = DropdownButtonFormField<String>(
                       initialValue: status,
                       dropdownColor: AppColors.bgCard,
@@ -203,10 +220,68 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                   },
                 ),
                 const SizedBox(height: AppSpacing.md),
-                Text('Assignees', style: AppTextStyles.caption),
+                const Text('Workflow Timing', style: AppTextStyles.caption),
+                const SizedBox(height: AppSpacing.xs),
+                TextField(
+                  controller: estimateController,
+                  keyboardType: TextInputType.number,
+                  style: AppTextStyles.bodyMedium,
+                  decoration: const InputDecoration(
+                    hintText: 'Estimated minutes',
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        dueDate == null
+                            ? 'No due date set'
+                            : formatShortDate(dueDate),
+                        style: AppTextStyles.bodySmall,
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () async {
+                        final date = await showDatePicker(
+                          context: context,
+                          firstDate: DateTime.now().subtract(
+                            const Duration(days: 365),
+                          ),
+                          lastDate:
+                              DateTime.now().add(const Duration(days: 365)),
+                          initialDate: dueDate ?? DateTime.now(),
+                        );
+                        if (date == null) {
+                          return;
+                        }
+                        setDialogState(() {
+                          dueDate = DateTime(
+                            date.year,
+                            date.month,
+                            date.day,
+                            23,
+                            59,
+                          );
+                        });
+                      },
+                      icon: const Icon(Icons.event_outlined),
+                    ),
+                    if (dueDate != null)
+                      IconButton(
+                        onPressed: () => setDialogState(() => dueDate = null),
+                        icon: const Icon(
+                          Icons.event_busy_outlined,
+                          color: Colors.redAccent,
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.md),
+                const Text('Assignees', style: AppTextStyles.caption),
                 const SizedBox(height: AppSpacing.xs),
                 if (_members.where((member) => member.user != null).isEmpty)
-                  Text(
+                  const Text(
                     'No accepted project members are available for assignment yet.',
                     style: AppTextStyles.bodySmall,
                   )
@@ -242,7 +317,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                         .toList(growable: false),
                   ),
                 const SizedBox(height: AppSpacing.md),
-                Text('Tags', style: AppTextStyles.caption),
+                const Text('Tags', style: AppTextStyles.caption),
                 const SizedBox(height: AppSpacing.xs),
                 Wrap(
                   spacing: AppSpacing.sm,
@@ -268,7 +343,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                   ],
                 ),
                 const SizedBox(height: AppSpacing.md),
-                Text('Reminder', style: AppTextStyles.caption),
+                const Text('Reminder', style: AppTextStyles.caption),
                 const SizedBox(height: AppSpacing.xs),
                 Row(
                   children: [
@@ -348,6 +423,15 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
       return;
     }
 
+    final estimateText = estimateController.text.trim();
+    final estimatedMinutes =
+        estimateText.isEmpty ? null : int.tryParse(estimateText);
+    if (estimateText.isNotEmpty &&
+        (estimatedMinutes == null || estimatedMinutes < 0)) {
+      _showMessage('Estimated minutes must be a non-negative whole number.');
+      return;
+    }
+
     setState(() => _busyId = task.id);
     try {
       await _tasksService.updateTask(
@@ -356,10 +440,15 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
         description: descriptionController.text.trim(),
         status: status,
         priority: priority,
+        dueDate: dueDate,
+        estimatedMinutes: estimatedMinutes,
         assigneeIds: selectedAssigneeIds.toList(growable: false),
         tagIds: selectedTagIds.toList(growable: false),
         reminderAt: reminderAt,
         clearReminder: reminderAt == null && task.reminderAt != null,
+        clearDueDate: dueDate == null && task.dueDate != null,
+        clearEstimatedMinutes:
+            estimatedMinutes == null && task.estimatedMinutes != null,
       );
       if (!mounted) {
         return;
@@ -389,7 +478,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
 
     List<FileAsset> availableFiles = const <FileAsset>[];
     try {
-      availableFiles = await _filesService.listFiles(ownerType: 'unassigned');
+      availableFiles = await _filesService.listFiles();
     } catch (_) {
       availableFiles = const <FileAsset>[];
     }
@@ -409,11 +498,14 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
           backgroundColor: AppColors.bgCard,
-          title: Text('Attach Files', style: AppTextStyles.titleMedium),
+          title: const Text(
+            'Attach Files',
+            style: AppTextStyles.titleMedium,
+          ),
           content: SingleChildScrollView(
             child: options.isEmpty
-                ? Text(
-                    'No unassigned files are available. Upload assets in Files Vault first.',
+                ? const Text(
+                    'No files are available in your vault yet. Upload assets in Files Vault first.',
                     style: AppTextStyles.bodySmall,
                   )
                 : Wrap(
@@ -425,7 +517,10 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                           label: SizedBox(
                             width: 160,
                             child: Text(
-                              file.originalName,
+                              file.attachedTaskCount > 0 &&
+                                      !selectedIds.contains(file.id)
+                                  ? '${file.originalName} (${file.attachedTaskCount} tasks)'
+                                  : file.originalName,
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
@@ -551,13 +646,99 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
     }
   }
 
+  Future<void> _submitChecklistItem() async {
+    final text = _checklistController.text.trim();
+    if (text.isEmpty) {
+      return;
+    }
+
+    setState(() => _submittingChecklist = true);
+    try {
+      await _tasksService.createChecklistItem(widget.taskId, content: text);
+      if (!mounted) {
+        return;
+      }
+      _checklistController.clear();
+      setState(() => _submittingChecklist = false);
+      await _loadData();
+    } on ApiException catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() => _submittingChecklist = false);
+      _showMessage(error.message);
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() => _submittingChecklist = false);
+      _showMessage('Checklist update failed: $error');
+    }
+  }
+
+  Future<void> _toggleChecklistItem(
+    TaskChecklistEntry item,
+    bool isCompleted,
+  ) async {
+    setState(() => _busyId = item.id);
+    try {
+      await _tasksService.updateChecklistItem(
+        widget.taskId,
+        item.id,
+        isCompleted: isCompleted,
+      );
+      if (!mounted) {
+        return;
+      }
+      await _loadData();
+    } on ApiException catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() => _busyId = null);
+      _showMessage(error.message);
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() => _busyId = null);
+      _showMessage('Checklist toggle failed: $error');
+    }
+  }
+
+  Future<void> _deleteChecklistItem(TaskChecklistEntry item) async {
+    setState(() => _busyId = item.id);
+    try {
+      await _tasksService.deleteChecklistItem(widget.taskId, item.id);
+      if (!mounted) {
+        return;
+      }
+      await _loadData();
+    } on ApiException catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() => _busyId = null);
+      _showMessage(error.message);
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() => _busyId = null);
+      _showMessage('Checklist delete failed: $error');
+    }
+  }
+
   Future<void> _showCommentEditDialog(TaskComment comment) async {
     final controller = TextEditingController(text: comment.content);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: AppColors.bgCard,
-        title: Text('Edit Comment', style: AppTextStyles.titleMedium),
+        title: const Text(
+          'Edit Comment',
+          style: AppTextStyles.titleMedium,
+        ),
         content: TextField(
           controller: controller,
           minLines: 3,
@@ -637,6 +818,21 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
     return _currentUser?.id == comment.authorId || _canManageContent;
   }
 
+  String _formatMinutesLabel(int? minutes) {
+    if (minutes == null) {
+      return '--';
+    }
+    if (minutes < 60) {
+      return '${minutes}m';
+    }
+    final hours = minutes ~/ 60;
+    final remainingMinutes = minutes % 60;
+    if (remainingMinutes == 0) {
+      return '${hours}h';
+    }
+    return '${hours}h ${remainingMinutes}m';
+  }
+
   void _showMessage(String message, {bool isError = true}) {
     if (!mounted) {
       return;
@@ -658,6 +854,8 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final task = _task;
+    final completedChecklistCount =
+        _checklistItems.where((item) => item.isCompleted).length;
 
     return WorkspaceScreenShell(
       title: task?.title ?? 'Task Detail',
@@ -718,6 +916,25 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                                 label:
                                     'UPDATED ${formatShortDate(task.updatedAt)}',
                               ),
+                              if (task.dueDate != null)
+                                _MetaBadge(
+                                  label: 'DUE ${formatShortDate(task.dueDate)}',
+                                ),
+                              if (task.estimatedMinutes != null)
+                                _MetaBadge(
+                                  label:
+                                      'EST ${_formatMinutesLabel(task.estimatedMinutes)}',
+                                ),
+                              if (task.startedAt != null)
+                                _MetaBadge(
+                                  label:
+                                      'STARTED ${formatShortDate(task.startedAt)}',
+                                ),
+                              if (task.completedAt != null)
+                                _MetaBadge(
+                                  label:
+                                      'DONE ${formatShortDate(task.completedAt)}',
+                                ),
                               if (task.reminderAt != null)
                                 _MetaBadge(
                                   label:
@@ -727,7 +944,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                           ),
                           if (_memberUiReadOnly) ...[
                             const SizedBox(height: AppSpacing.md),
-                            Text(
+                            const Text(
                               'Admin inspection keeps this member task view read-only. Use the Admin Console for task, file, and reminder writes.',
                               style: AppTextStyles.bodySmall,
                             ),
@@ -760,6 +977,47 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          const Text(
+                            'Workflow Snapshot',
+                            style: AppTextStyles.titleMedium,
+                          ),
+                          const SizedBox(height: AppSpacing.md),
+                          Wrap(
+                            spacing: AppSpacing.sm,
+                            runSpacing: AppSpacing.sm,
+                            children: [
+                              KpiChip(
+                                label: 'Due Date',
+                                value: formatShortDate(task.dueDate),
+                              ),
+                              KpiChip(
+                                label: 'Estimate',
+                                value:
+                                    _formatMinutesLabel(task.estimatedMinutes),
+                              ),
+                              KpiChip(
+                                label: 'Started',
+                                value: formatShortDate(task.startedAt),
+                              ),
+                              KpiChip(
+                                label: 'Completed',
+                                value: formatShortDate(task.completedAt),
+                              ),
+                              KpiChip(
+                                label: 'Checklist',
+                                value:
+                                    '$completedChecklistCount/${_checklistItems.length}',
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    MechaPanel(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
                           LayoutBuilder(
                             builder: (context, constraints) {
                               final attachButton = !_canManageContent
@@ -780,7 +1038,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                                 return Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text(
+                                    const Text(
                                       'Tags & Attachments',
                                       style: AppTextStyles.titleMedium,
                                     ),
@@ -791,7 +1049,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
 
                               return Row(
                                 children: [
-                                  Expanded(
+                                  const Expanded(
                                     child: Text(
                                       'Tags & Attachments',
                                       style: AppTextStyles.titleMedium,
@@ -804,7 +1062,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                           ),
                           const SizedBox(height: AppSpacing.sm),
                           if (task.tags.isEmpty)
-                            Text(
+                            const Text(
                               'No tags assigned.',
                               style: AppTextStyles.bodySmall,
                             )
@@ -823,7 +1081,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                             ),
                           const SizedBox(height: AppSpacing.md),
                           if (task.files.isEmpty)
-                            Text(
+                            const Text(
                               'No files attached.',
                               style: AppTextStyles.bodySmall,
                             )
@@ -862,8 +1120,211 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Comment Thread',
-                              style: AppTextStyles.titleMedium),
+                          const Text(
+                            'Checklist',
+                            style: AppTextStyles.titleMedium,
+                          ),
+                          const SizedBox(height: AppSpacing.md),
+                          if (_canManageContent) ...[
+                            TextField(
+                              controller: _checklistController,
+                              style: AppTextStyles.bodyMedium,
+                              decoration: const InputDecoration(
+                                hintText: 'Add a checklist step',
+                              ),
+                            ),
+                            const SizedBox(height: AppSpacing.md),
+                            MechaButton(
+                              label: _submittingChecklist
+                                  ? 'ADDING...'
+                                  : 'ADD CHECKLIST ITEM',
+                              onTap: _submittingChecklist
+                                  ? null
+                                  : _submitChecklistItem,
+                            ),
+                            const SizedBox(height: AppSpacing.md),
+                          ] else ...[
+                            const Text(
+                              'Checklist edits are disabled in read-only mode.',
+                              style: AppTextStyles.bodySmall,
+                            ),
+                            const SizedBox(height: AppSpacing.md),
+                          ],
+                          if (_checklistItems.isEmpty)
+                            const WorkspaceEmptyState(
+                              icon: Icons.checklist_outlined,
+                              title: 'No Checklist Items',
+                              message:
+                                  'Add a few implementation steps here to reflect backend workflow progress.',
+                            )
+                          else
+                            Column(
+                              children: _checklistItems
+                                  .map(
+                                    (item) => Padding(
+                                      padding: const EdgeInsets.only(
+                                        bottom: AppSpacing.sm,
+                                      ),
+                                      child: MechaPanel(
+                                        padding: const EdgeInsets.all(
+                                          AppSpacing.md,
+                                        ),
+                                        child: Row(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Checkbox(
+                                              value: item.isCompleted,
+                                              onChanged: !_canManageContent ||
+                                                      _busyId == item.id
+                                                  ? null
+                                                  : (value) =>
+                                                      _toggleChecklistItem(
+                                                        item,
+                                                        value ?? false,
+                                                      ),
+                                            ),
+                                            Expanded(
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    item.content,
+                                                    style: AppTextStyles
+                                                        .bodyMedium
+                                                        .copyWith(
+                                                      decoration:
+                                                          item.isCompleted
+                                                              ? TextDecoration
+                                                                  .lineThrough
+                                                              : null,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(
+                                                    height: AppSpacing.xs,
+                                                  ),
+                                                  Text(
+                                                    item.isCompleted
+                                                        ? 'Completed ${formatShortDateTime(item.completedAt)}'
+                                                        : 'Updated ${formatShortDateTime(item.updatedAt)}',
+                                                    style:
+                                                        AppTextStyles.caption,
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                            if (_canManageContent)
+                                              IconButton(
+                                                onPressed: _busyId == item.id
+                                                    ? null
+                                                    : () =>
+                                                        _deleteChecklistItem(
+                                                          item,
+                                                        ),
+                                                icon: const Icon(
+                                                  Icons.delete_outline,
+                                                  color: Colors.redAccent,
+                                                ),
+                                              ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  )
+                                  .toList(growable: false),
+                            ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    MechaPanel(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Recent Activity',
+                            style: AppTextStyles.titleMedium,
+                          ),
+                          const SizedBox(height: AppSpacing.md),
+                          if (_activity.isEmpty)
+                            const WorkspaceEmptyState(
+                              icon: Icons.history_toggle_off,
+                              title: 'No Activity Yet',
+                              message:
+                                  'Task changes, checklist updates, and comments will appear here.',
+                            )
+                          else
+                            Column(
+                              children: _activity
+                                  .take(10)
+                                  .map(
+                                    (entry) => Padding(
+                                      padding: const EdgeInsets.only(
+                                        bottom: AppSpacing.md,
+                                      ),
+                                      child: MechaPanel(
+                                        padding: const EdgeInsets.all(
+                                          AppSpacing.md,
+                                        ),
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Row(
+                                              children: [
+                                                Expanded(
+                                                  child: Text(
+                                                    entry.actor
+                                                            ?.resolvedDisplayName ??
+                                                        'System',
+                                                    style: AppTextStyles
+                                                        .titleMedium,
+                                                  ),
+                                                ),
+                                                Text(
+                                                  formatShortDateTime(
+                                                    entry.createdAt,
+                                                  ),
+                                                  style: AppTextStyles.caption,
+                                                ),
+                                              ],
+                                            ),
+                                            const SizedBox(
+                                              height: AppSpacing.xs,
+                                            ),
+                                            Text(
+                                              entry.message,
+                                              style: AppTextStyles.bodyMedium,
+                                            ),
+                                            const SizedBox(
+                                              height: AppSpacing.xs,
+                                            ),
+                                            Text(
+                                              titleCaseToken(
+                                                entry.type.replaceAll('.', '_'),
+                                              ),
+                                              style: AppTextStyles.caption,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  )
+                                  .toList(growable: false),
+                            ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    MechaPanel(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Comment Thread',
+                            style: AppTextStyles.titleMedium,
+                          ),
                           const SizedBox(height: AppSpacing.md),
                           if (_canComment) ...[
                             TextField(
@@ -884,7 +1345,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                             ),
                             const SizedBox(height: AppSpacing.md),
                           ] else ...[
-                            Text(
+                            const Text(
                               'Comments are disabled in read-only admin inspection mode.',
                               style: AppTextStyles.bodySmall,
                             ),

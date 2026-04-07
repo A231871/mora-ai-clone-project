@@ -1,6 +1,65 @@
 const Reminder = require('../models/Reminder');
 const ApiError = require('../utils/apiError');
 
+const WEEKDAY_NAMES = [
+  'sunday',
+  'monday',
+  'tuesday',
+  'wednesday',
+  'thursday',
+  'friday',
+  'saturday',
+];
+
+const normalizeDaysOfWeek = (daysOfWeek = []) => [
+  ...new Set(
+    (Array.isArray(daysOfWeek) ? daysOfWeek : [])
+      .map((day) => day?.toString().trim().toLowerCase())
+      .map((day) => {
+        if (day === 'mon') return 'monday';
+        if (day === 'tue' || day === 'tues') return 'tuesday';
+        if (day === 'wed') return 'wednesday';
+        if (day === 'thu' || day === 'thur' || day === 'thurs') return 'thursday';
+        if (day === 'fri') return 'friday';
+        if (day === 'sat') return 'saturday';
+        if (day === 'sun') return 'sunday';
+        return day;
+      })
+      .filter((day) => WEEKDAY_NAMES.includes(day)),
+  ),
+];
+
+const getNextRecurringScheduledTime = (
+  scheduledTime,
+  daysOfWeek = [],
+  now = new Date(),
+) => {
+  const normalizedDays = normalizeDaysOfWeek(daysOfWeek);
+  if (normalizedDays.length === 0) {
+    return null;
+  }
+
+  const baseTime = new Date(scheduledTime);
+  if (Number.isNaN(baseTime.getTime())) {
+    throw new ApiError(400, 'scheduledTime is invalid');
+  }
+
+  for (let offset = 1; offset <= 14; offset += 1) {
+    const candidate = new Date(baseTime);
+    candidate.setDate(candidate.getDate() + offset);
+
+    if (!normalizedDays.includes(WEEKDAY_NAMES[candidate.getDay()])) {
+      continue;
+    }
+
+    if (candidate > now) {
+      return candidate;
+    }
+  }
+
+  return null;
+};
+
 const normalizeReminderInput = (payload = {}) => {
   const scheduledTime = payload.scheduledTime
     ? new Date(payload.scheduledTime)
@@ -17,7 +76,7 @@ const normalizeReminderInput = (payload = {}) => {
   return {
     message: payload.task || payload.message,
     scheduledTime,
-    daysOfWeek: Array.isArray(payload.daysOfWeek) ? payload.daysOfWeek : [],
+    daysOfWeek: normalizeDaysOfWeek(payload.daysOfWeek),
     projectId: payload.projectId || null,
     taskId: payload.taskId || null,
     isCompleted: payload.isCompleted === true,
@@ -93,9 +152,7 @@ const updateReminderForUser = async (userId, reminderId, payload) => {
   }
 
   if (payload.daysOfWeek !== undefined) {
-    reminder.daysOfWeek = Array.isArray(payload.daysOfWeek)
-      ? payload.daysOfWeek
-      : [];
+    reminder.daysOfWeek = normalizeDaysOfWeek(payload.daysOfWeek);
   }
 
   if (payload.isCompleted !== undefined) {
@@ -133,26 +190,42 @@ const completeAllRemindersForUser = async (userId) => {
 };
 
 const processDueReminders = async (io) => {
+  const now = new Date();
   const pendingReminders = await Reminder.find({
-    scheduledTime: { $lte: new Date() },
+    scheduledTime: { $lte: now },
     isCompleted: false,
-    daysOfWeek: { $size: 0 },
   });
 
   if (pendingReminders.length === 0) {
     return 0;
   }
 
+  let processedCount = 0;
+
   for (const reminder of pendingReminders) {
     io.to(reminder.userId.toString()).emit('system:alert', {
       message: reminder.message,
     });
 
-    reminder.isCompleted = true;
+    const nextScheduledTime = getNextRecurringScheduledTime(
+      reminder.scheduledTime,
+      reminder.daysOfWeek,
+      now,
+    );
+
+    if (nextScheduledTime) {
+      reminder.daysOfWeek = normalizeDaysOfWeek(reminder.daysOfWeek);
+      reminder.scheduledTime = nextScheduledTime;
+      reminder.isCompleted = false;
+    } else {
+      reminder.isCompleted = true;
+    }
+
     await reminder.save();
+    processedCount += 1;
   }
 
-  return pendingReminders.length;
+  return processedCount;
 };
 
 module.exports = {
@@ -160,8 +233,10 @@ module.exports = {
   createReminder,
   deleteAllRemindersForUser,
   deleteReminderForUser,
+  getNextRecurringScheduledTime,
   getReminderForUser,
   listUserReminders,
+  normalizeDaysOfWeek,
   processDueReminders,
   updateReminderForUser,
 };

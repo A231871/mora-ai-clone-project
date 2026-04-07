@@ -154,6 +154,7 @@ class FileAsset {
     required this.kind,
     required this.originalName,
     required this.publicUrl,
+    this.attachedTaskIds = const <String>[],
     this.ownerType,
     this.ownerId,
     this.uploadedBy,
@@ -172,6 +173,7 @@ class FileAsset {
   final String kind;
   final String originalName;
   final String publicUrl;
+  final List<String> attachedTaskIds;
   final String? ownerType;
   final String? ownerId;
   final String? uploadedBy;
@@ -186,6 +188,8 @@ class FileAsset {
   final DateTime? updatedAt;
 
   bool get isImage => kind == 'image';
+  bool get hasTaskAttachments => attachedTaskIds.isNotEmpty;
+  int get attachedTaskCount => attachedTaskIds.length;
 
   factory FileAsset.fromJson(dynamic rawJson) {
     final json = asJsonMap(rawJson);
@@ -198,6 +202,12 @@ class FileAsset {
       kind: (json['kind'] ?? 'image').toString(),
       originalName: (json['originalName'] ?? 'Untitled').toString(),
       publicUrl: (json['publicUrl'] ?? '').toString(),
+      attachedTaskIds: (json['taskIds'] is Iterable)
+          ? (json['taskIds'] as Iterable)
+              .map(readJsonId)
+              .where((value) => value.isNotEmpty)
+              .toList(growable: false)
+          : const <String>[],
       ownerType: readNullableString(json['ownerType']),
       ownerId: readNullableString(json['ownerId']),
       uploadedBy: readJsonId(json['uploadedBy']),
@@ -222,6 +232,7 @@ class FileAsset {
       'kind': kind,
       'originalName': originalName,
       'publicUrl': publicUrl,
+      'taskIds': attachedTaskIds,
       'ownerType': ownerType,
       'ownerId': ownerId,
       'uploadedBy': uploadedBy,
@@ -446,6 +457,137 @@ class WorkspaceProject {
   }
 }
 
+class ProjectAnalyticsOverview {
+  const ProjectAnalyticsOverview({
+    required this.projectId,
+    required this.total,
+    required this.todo,
+    required this.inProgress,
+    required this.done,
+    required this.overdue,
+    required this.dueToday,
+    required this.completedCount,
+    required this.completionRate,
+    this.averageCompletionMinutes,
+    this.generatedAt,
+  });
+
+  final String projectId;
+  final int total;
+  final int todo;
+  final int inProgress;
+  final int done;
+  final int overdue;
+  final int dueToday;
+  final int completedCount;
+  final double completionRate;
+  final double? averageCompletionMinutes;
+  final DateTime? generatedAt;
+
+  factory ProjectAnalyticsOverview.fromJson(dynamic rawJson) {
+    final json = asJsonMap(rawJson);
+    final totals = asJsonMap(json['totals']);
+    final completion = asJsonMap(json['completion']);
+
+    return ProjectAnalyticsOverview(
+      projectId: readNullableString(json['projectId']) ?? '',
+      total: totals['total'] is num ? (totals['total'] as num).toInt() : 0,
+      todo: totals['todo'] is num ? (totals['todo'] as num).toInt() : 0,
+      inProgress: totals['inProgress'] is num
+          ? (totals['inProgress'] as num).toInt()
+          : 0,
+      done: totals['done'] is num ? (totals['done'] as num).toInt() : 0,
+      overdue:
+          totals['overdue'] is num ? (totals['overdue'] as num).toInt() : 0,
+      dueToday:
+          totals['dueToday'] is num ? (totals['dueToday'] as num).toInt() : 0,
+      completedCount: completion['completedCount'] is num
+          ? (completion['completedCount'] as num).toInt()
+          : 0,
+      completionRate: completion['completionRate'] is num
+          ? (completion['completionRate'] as num).toDouble()
+          : 0,
+      averageCompletionMinutes: completion['averageCompletionMinutes'] is num
+          ? (completion['averageCompletionMinutes'] as num).toDouble()
+          : null,
+      generatedAt: parseDateTime(json['generatedAt']),
+    );
+  }
+}
+
+class AnalyticsBreakdownItem {
+  const AnalyticsBreakdownItem({
+    required this.id,
+    required this.label,
+    required this.taskCount,
+    required this.openTaskCount,
+    required this.completedTaskCount,
+    this.color,
+  });
+
+  final String id;
+  final String label;
+  final int taskCount;
+  final int openTaskCount;
+  final int completedTaskCount;
+  final String? color;
+
+  factory AnalyticsBreakdownItem.fromJson(dynamic rawJson) {
+    final json = asJsonMap(rawJson);
+    return AnalyticsBreakdownItem(
+      id: readNullableString(json['tagId']) ??
+          readNullableString(json['assigneeId']) ??
+          readNullableString(json['priority']) ??
+          readJsonId(json),
+      label: readNullableString(json['label']) ??
+          readNullableString(json['priority']) ??
+          'Unknown',
+      taskCount:
+          json['taskCount'] is num ? (json['taskCount'] as num).toInt() : 0,
+      openTaskCount: json['openTaskCount'] is num
+          ? (json['openTaskCount'] as num).toInt()
+          : 0,
+      completedTaskCount: json['completedTaskCount'] is num
+          ? (json['completedTaskCount'] as num).toInt()
+          : 0,
+      color: readNullableString(json['color']),
+    );
+  }
+}
+
+class ProjectAnalyticsWorkload {
+  const ProjectAnalyticsWorkload({
+    required this.projectId,
+    required this.priorities,
+    required this.assignees,
+    required this.tags,
+    this.generatedAt,
+  });
+
+  final String projectId;
+  final List<AnalyticsBreakdownItem> priorities;
+  final List<AnalyticsBreakdownItem> assignees;
+  final List<AnalyticsBreakdownItem> tags;
+  final DateTime? generatedAt;
+
+  factory ProjectAnalyticsWorkload.fromJson(dynamic rawJson) {
+    final json = asJsonMap(rawJson);
+    return ProjectAnalyticsWorkload(
+      projectId: readNullableString(json['projectId']) ?? '',
+      priorities: asJsonList(json['priorities'])
+          .map(AnalyticsBreakdownItem.fromJson)
+          .toList(growable: false),
+      assignees: asJsonList(json['assignees'])
+          .map(AnalyticsBreakdownItem.fromJson)
+          .toList(growable: false),
+      tags: asJsonList(json['tags'])
+          .map(AnalyticsBreakdownItem.fromJson)
+          .toList(growable: false),
+      generatedAt: parseDateTime(json['generatedAt']),
+    );
+  }
+}
+
 class TaskItem {
   const TaskItem({
     required this.id,
@@ -460,6 +602,10 @@ class TaskItem {
     this.assignees = const <AppUser>[],
     this.tags = const <ProjectTag>[],
     this.files = const <FileAsset>[],
+    this.dueDate,
+    this.estimatedMinutes,
+    this.startedAt,
+    this.completedAt,
     this.reminderAt,
     this.reminderId,
     this.createdBy,
@@ -483,6 +629,10 @@ class TaskItem {
   final List<AppUser> assignees;
   final List<ProjectTag> tags;
   final List<FileAsset> files;
+  final DateTime? dueDate;
+  final int? estimatedMinutes;
+  final DateTime? startedAt;
+  final DateTime? completedAt;
   final DateTime? reminderAt;
   final String? reminderId;
   final String? createdBy;
@@ -494,6 +644,8 @@ class TaskItem {
   final DateTime? updatedAt;
 
   bool get isDone => status == 'done';
+  bool get isOverdue =>
+      !isDone && dueDate != null && dueDate!.isBefore(DateTime.now());
 
   factory TaskItem.fromJson(dynamic rawJson) {
     final json = asJsonMap(rawJson);
@@ -532,6 +684,12 @@ class TaskItem {
       assignees: assigneesJson.map(AppUser.fromJson).toList(growable: false),
       tags: tagsJson.map(ProjectTag.fromJson).toList(growable: false),
       files: filesJson.map(FileAsset.fromJson).toList(growable: false),
+      dueDate: parseDateTime(json['dueDate']),
+      estimatedMinutes: json['estimatedMinutes'] is num
+          ? (json['estimatedMinutes'] as num).toInt()
+          : null,
+      startedAt: parseDateTime(json['startedAt']),
+      completedAt: parseDateTime(json['completedAt']),
       reminderAt: parseDateTime(json['reminderAt']),
       reminderId: readNullableString(json['reminderId']),
       createdBy: readJsonId(json['createdBy']),
@@ -540,6 +698,101 @@ class TaskItem {
           projectJson.isEmpty ? null : WorkspaceProject.fromJson(projectJson),
       creator: creatorJson.isEmpty ? null : AppUser.fromJson(creatorJson),
       updater: updaterJson.isEmpty ? null : AppUser.fromJson(updaterJson),
+      createdAt: parseDateTime(json['createdAt']),
+      updatedAt: parseDateTime(json['updatedAt']),
+    );
+  }
+}
+
+class TaskChecklistEntry {
+  const TaskChecklistEntry({
+    required this.id,
+    required this.taskId,
+    required this.projectId,
+    required this.content,
+    required this.isCompleted,
+    required this.createdBy,
+    required this.updatedBy,
+    this.creator,
+    this.updater,
+    this.completedAt,
+    this.createdAt,
+    this.updatedAt,
+  });
+
+  final String id;
+  final String taskId;
+  final String projectId;
+  final String content;
+  final bool isCompleted;
+  final String createdBy;
+  final String updatedBy;
+  final AppUser? creator;
+  final AppUser? updater;
+  final DateTime? completedAt;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
+
+  factory TaskChecklistEntry.fromJson(dynamic rawJson) {
+    final json = asJsonMap(rawJson);
+    final createdByJson = asJsonMap(json['createdBy']);
+    final updatedByJson = asJsonMap(json['updatedBy']);
+
+    return TaskChecklistEntry(
+      id: readJsonId(json),
+      taskId: readJsonId(json['taskId']),
+      projectId: readJsonId(json['projectId']),
+      content: (json['content'] ?? '').toString(),
+      isCompleted: parseBool(json['isCompleted']),
+      createdBy: readJsonId(json['createdBy']),
+      updatedBy: readJsonId(json['updatedBy']),
+      creator: createdByJson.isEmpty ? null : AppUser.fromJson(createdByJson),
+      updater: updatedByJson.isEmpty ? null : AppUser.fromJson(updatedByJson),
+      completedAt: parseDateTime(json['completedAt']),
+      createdAt: parseDateTime(json['createdAt']),
+      updatedAt: parseDateTime(json['updatedAt']),
+    );
+  }
+}
+
+class TaskActivityEntry {
+  const TaskActivityEntry({
+    required this.id,
+    required this.taskId,
+    required this.projectId,
+    required this.actorId,
+    required this.type,
+    required this.message,
+    required this.meta,
+    this.actor,
+    this.createdAt,
+    this.updatedAt,
+  });
+
+  final String id;
+  final String taskId;
+  final String projectId;
+  final String actorId;
+  final String type;
+  final String message;
+  final Map<String, dynamic> meta;
+  final AppUser? actor;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
+
+  factory TaskActivityEntry.fromJson(dynamic rawJson) {
+    final json = asJsonMap(rawJson);
+    final actorJson = asJsonMap(json['actorId']);
+
+    return TaskActivityEntry(
+      id: readJsonId(json),
+      taskId: readJsonId(json['taskId']),
+      projectId: readJsonId(json['projectId']),
+      actorId: readJsonId(json['actorId']),
+      type: (json['type'] ?? '').toString(),
+      message: (json['message'] ?? '').toString(),
+      meta: asJsonMap(json['meta']),
+      actor: actorJson.isEmpty ? null : AppUser.fromJson(actorJson),
       createdAt: parseDateTime(json['createdAt']),
       updatedAt: parseDateTime(json['updatedAt']),
     );

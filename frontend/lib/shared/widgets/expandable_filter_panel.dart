@@ -17,7 +17,7 @@ class ExpandableFilterPanel extends StatelessWidget {
     required this.child,
     this.collapsedHint = 'Tap to expand search and filters',
     this.collapseBreakpoint = 720,
-    this.compactExpandedBodyMaxHeight = 320,
+    this.compactExpandedBodyMaxHeight = 220,
   });
 
   final String title;
@@ -38,13 +38,33 @@ class ExpandableFilterPanel extends StatelessWidget {
         final effectiveSummary =
             summary.trim().isEmpty ? collapsedHint : summary;
         final screenHeight = MediaQuery.sizeOf(context).height;
-        final compactBodyMaxHeight = math.min(
-          compactExpandedBodyMaxHeight,
-          math.max(200.0, screenHeight * 0.34),
+        final availableHeight =
+            constraints.hasBoundedHeight && constraints.maxHeight.isFinite
+                ? constraints.maxHeight
+                : screenHeight;
+        final maxBodyFromAvailable = math.max(
+          96.0,
+          availableHeight - (isCompact ? 116.0 : 0.0),
         );
+        final compactBodyMaxHeight = math.min(
+          math.min(
+            compactExpandedBodyMaxHeight,
+            math.max(160.0, screenHeight * 0.24),
+          ),
+          maxBodyFromAvailable,
+        );
+        final panelPadding = isCompact
+            ? const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md,
+                vertical: AppSpacing.sm,
+              )
+            : const EdgeInsets.all(AppSpacing.md);
+        final bodySpacing = isCompact ? AppSpacing.sm : AppSpacing.md;
 
         return MechaPanel(
+          padding: panelPadding,
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               InkWell(
@@ -91,7 +111,7 @@ class ExpandableFilterPanel extends StatelessWidget {
                 ),
               ),
               if (isExpanded) ...[
-                const SizedBox(height: AppSpacing.md),
+                SizedBox(height: bodySpacing),
                 if (isCompact)
                   ConstrainedBox(
                     constraints: BoxConstraints(

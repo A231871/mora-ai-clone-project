@@ -218,7 +218,10 @@ class _ConfigScreenState extends ConsumerState<ConfigScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Language', style: AppTextStyles.titleMedium),
+                      const Text(
+                        'Language',
+                        style: AppTextStyles.titleMedium,
+                      ),
                       const SizedBox(height: AppSpacing.sm),
                       LayoutBuilder(
                         builder: (context, constraints) {
@@ -246,7 +249,7 @@ class _ConfigScreenState extends ConsumerState<ConfigScreen> {
                             return Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
+                                const Text(
                                   'System language persists across restarts.',
                                   style: AppTextStyles.bodySmall,
                                 ),
@@ -258,7 +261,7 @@ class _ConfigScreenState extends ConsumerState<ConfigScreen> {
 
                           return Row(
                             children: [
-                              Expanded(
+                              const Expanded(
                                 child: Text(
                                   'System language persists across restarts.',
                                   style: AppTextStyles.bodySmall,
@@ -278,7 +281,10 @@ class _ConfigScreenState extends ConsumerState<ConfigScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Audio', style: AppTextStyles.titleMedium),
+                      const Text(
+                        'Audio',
+                        style: AppTextStyles.titleMedium,
+                      ),
                       const SizedBox(height: AppSpacing.md),
                       _SettingsSliderCard(
                         label: 'Master Volume',
@@ -316,7 +322,10 @@ class _ConfigScreenState extends ConsumerState<ConfigScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Runtime Toggles', style: AppTextStyles.titleMedium),
+                      const Text(
+                        'Runtime Toggles',
+                        style: AppTextStyles.titleMedium,
+                      ),
                       const SizedBox(height: AppSpacing.md),
                       _SettingsSwitchTile(
                         title: 'Notifications',
@@ -347,7 +356,7 @@ class _ConfigScreenState extends ConsumerState<ConfigScreen> {
                     children: [
                       Row(
                         children: [
-                          Expanded(
+                          const Expanded(
                             child: Text(
                               'Status',
                               style: AppTextStyles.titleMedium,
@@ -398,10 +407,12 @@ class _ConfigScreenState extends ConsumerState<ConfigScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Session Controls',
-                          style: AppTextStyles.titleMedium),
+                      const Text(
+                        'Session Controls',
+                        style: AppTextStyles.titleMedium,
+                      ),
                       const SizedBox(height: AppSpacing.xs),
-                      Text(
+                      const Text(
                         'These actions revoke the current device session or every active refresh session on the backend.',
                         style: AppTextStyles.bodySmall,
                       ),

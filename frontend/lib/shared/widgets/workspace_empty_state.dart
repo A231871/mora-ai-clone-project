@@ -14,6 +14,7 @@ class WorkspaceEmptyState extends StatelessWidget {
     required this.message,
     this.actionLabel,
     this.onAction,
+    this.adaptiveToConstraints = false,
   });
 
   final IconData icon;
@@ -21,15 +22,58 @@ class WorkspaceEmptyState extends StatelessWidget {
   final String message;
   final String? actionLabel;
   final VoidCallback? onAction;
+  final bool adaptiveToConstraints;
+
+  static const double _compactHeightThreshold = 260;
 
   @override
   Widget build(BuildContext context) {
+    if (!adaptiveToConstraints) {
+      return _buildPanel(compact: false);
+    }
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (!constraints.hasBoundedHeight || !constraints.maxHeight.isFinite) {
+          return _buildPanel(compact: false);
+        }
+
+        final useCompactLayout =
+            constraints.maxHeight < _compactHeightThreshold;
+        final panel = SizedBox(
+          width: constraints.maxWidth,
+          child: _buildPanel(compact: useCompactLayout),
+        );
+        final content = ConstrainedBox(
+          constraints: BoxConstraints(minHeight: constraints.maxHeight),
+          child: Align(
+            alignment:
+                useCompactLayout ? Alignment.topCenter : Alignment.center,
+            child: panel,
+          ),
+        );
+
+        return SingleChildScrollView(child: content);
+      },
+    );
+  }
+
+  Widget _buildPanel({required bool compact}) {
+    final iconSize = compact ? 34.0 : 42.0;
+    final topSpacing = compact ? AppSpacing.sm : AppSpacing.md;
+    final actionSpacing = compact ? AppSpacing.sm : AppSpacing.md;
+    final verticalPadding = compact ? AppSpacing.sm : AppSpacing.md;
+
     return MechaPanel(
+      padding: EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: verticalPadding,
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 42, color: AppColors.primary),
-          const SizedBox(height: AppSpacing.md),
+          Icon(icon, size: iconSize, color: AppColors.primary),
+          SizedBox(height: topSpacing),
           Text(
             title,
             style: AppTextStyles.titleMedium,
@@ -42,7 +86,7 @@ class WorkspaceEmptyState extends StatelessWidget {
             textAlign: TextAlign.center,
           ),
           if (actionLabel != null && onAction != null) ...[
-            const SizedBox(height: AppSpacing.md),
+            SizedBox(height: actionSpacing),
             MechaButton(
               label: actionLabel!,
               onTap: onAction!,

@@ -8,6 +8,8 @@ const {
   destroyProject,
   destroyProjectMember,
   destroyTag,
+  getAnalyticsOverview,
+  getAnalyticsWorkload,
   getProject,
   getProjectInvites,
   getProjectMembers,
@@ -25,6 +27,8 @@ router.use(protect);
 
 router.route('/').get(listProjects).post(createProject);
 router.route('/:projectId').get(getProject).patch(patchProject).delete(destroyProject);
+router.route('/:projectId/analytics/overview').get(getAnalyticsOverview);
+router.route('/:projectId/analytics/workload').get(getAnalyticsWorkload);
 
 router
   .route('/:projectId/members')
