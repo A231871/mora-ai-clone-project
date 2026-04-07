@@ -10,6 +10,8 @@ const REFRESH_TOKEN_EXPIRES_DAYS = Number(
   process.env.REFRESH_TOKEN_EXPIRES_DAYS || 30,
 );
 
+// Refresh tokens are never stored in plaintext. If the database leaks,
+// attackers still do not get usable refresh credentials.
 const hashRefreshToken = (refreshToken) =>
   crypto.createHash('sha256').update(refreshToken).digest('hex');
 
@@ -31,6 +33,7 @@ const deriveAuthProvider = (user) => {
 };
 
 const sanitizeUser = (user) => ({
+  // Controllers always return this safe projection instead of the raw Mongoose document.
   id: user._id,
   username: user.username,
   email: user.email || null,
@@ -60,6 +63,8 @@ const verifyAccessToken = (token) =>
   jwt.verify(token, process.env.JWT_SECRET);
 
 const issueAuthTokens = async (user, meta = {}) => {
+  // Access tokens stay short and self-contained.
+  // Refresh tokens are database-backed so we can revoke sessions individually.
   const token = signAccessToken(user);
   const refreshToken = generateRefreshToken();
 
@@ -108,6 +113,8 @@ const getSessionByRefreshToken = async (refreshToken) => {
 };
 
 const rotateRefreshToken = async (refreshToken, meta = {}) => {
+  // Rotation makes refresh tokens single-use. Reusing an old token fails because
+  // the old AuthSession is marked revoked before a new pair is issued.
   const authSession = await getSessionByRefreshToken(refreshToken);
   const user = await User.findById(authSession.userId);
 
@@ -167,6 +174,9 @@ const revokeAllSessionsForUser = async (userId) => {
 };
 
 const ensureAdminUser = async () => {
+  // This is a safety net for class/demo environments: the first account becomes
+  // admin if no admin currently exists, so the system never gets stuck without
+  // an administrative operator.
   const totalUsers = await User.countDocuments();
   if (totalUsers === 0) {
     return;

@@ -2,6 +2,7 @@ const User = require('../models/User');
 const ApiError = require('../utils/apiError');
 const { verifyAccessToken } = require('../services/auth.service');
 
+// Both HTTP and Socket.IO use bearer tokens, so the extraction logic lives in one place.
 const extractBearerToken = (authorizationHeader = '') => {
   if (!authorizationHeader.startsWith('Bearer ')) {
     return null;
@@ -12,6 +13,8 @@ const extractBearerToken = (authorizationHeader = '') => {
 
 const protect = async (req, _res, next) => {
   try {
+    // Authentication is stateless on the access-token side: decode JWT, then
+    // hydrate the latest user document so role/profile changes apply immediately.
     const token = extractBearerToken(req.headers.authorization || '');
     if (!token) {
       throw new ApiError(401, 'Not authorized, no token');
@@ -37,6 +40,8 @@ const protect = async (req, _res, next) => {
 };
 
 const authorizeSystemRoles = (...roles) => (req, _res, next) => {
+  // System roles guard admin-only routes, while project roles are checked deeper
+  // inside the project/task services.
   if (!req.user) {
     return next(new ApiError(401, 'Authentication required'));
   }

@@ -63,6 +63,8 @@ const toUniqueIdStrings = (values = []) => [
 ];
 
 const getFileAttachedTaskIds = (file) => {
+  // taskIds is the new many-to-many representation.
+  // ownerType=task/ownerId is still respected so older records remain valid.
   const taskIds = toUniqueIdStrings(file?.taskIds);
 
   if (file?.ownerType === 'task' && file?.ownerId) {
@@ -86,6 +88,8 @@ const setFileAttachedTaskIds = (file, taskIds, now = new Date()) => {
     normalizedTaskIds.length === 1 &&
     normalizedTaskIds[0] === ownerTaskId;
 
+  // Once a file belongs to more than one task, it can no longer be represented
+  // as a single task owner, so we demote the legacy owner fields to unassigned.
   if (file?.ownerType === 'task' && !keepLegacyTaskOwner) {
     file.ownerType = 'unassigned';
     file.ownerId = null;

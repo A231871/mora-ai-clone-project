@@ -45,6 +45,8 @@ const { uploadSingleFile } = require('../middlewares/uploadMiddleware');
 
 const router = express.Router();
 
+// The admin console exposes system-wide CRUD for demos and moderation.
+// It is protected by both JWT auth and a systemRole=admin check.
 router.use(protect, authorizeSystemRoles('admin'));
 
 router.route('/users').get(listUsers).post(createUser);

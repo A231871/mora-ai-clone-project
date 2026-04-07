@@ -17,6 +17,7 @@ const getCurrentUserProfile = asyncHandler(async (req, res) => {
 const updateCurrentUserProfile = asyncHandler(async (req, res) => {
   const { email, profile, avatarConfig, avatarAssetId } = req.body;
 
+  // Email mutation is intentionally blocked until verification/recovery flows exist.
   if (email !== undefined && email !== req.user.email) {
     throw new ApiError(
       400,
@@ -35,6 +36,8 @@ const updateCurrentUserProfile = asyncHandler(async (req, res) => {
   }
 
   if (avatarConfig) {
+    // Avatar config is merged so the frontend can update only the changed parts
+    // of the avatar builder instead of resending the entire object every time.
     req.user.avatarConfig = {
       ...req.user.avatarConfig.toObject?.(),
       ...avatarConfig,
@@ -63,6 +66,7 @@ const getMyPendingInvites = asyncHandler(async (req, res) => {
 });
 
 const respondToMyInvite = asyncHandler(async (req, res) => {
+  // Invite acceptance is routed through the same project membership rules used elsewhere.
   const invite = await respondToProjectInvite(
     req.user,
     req.params.inviteId,

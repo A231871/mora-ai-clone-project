@@ -66,6 +66,8 @@ const normalizeEstimatedMinutes = (value) => {
 };
 
 const applyTaskLifecycleState = (task, previousStatus, nextStatus, now = new Date()) => {
+  // Lifecycle timestamps are derived from status transitions so the frontend
+  // does not need to manage workflow timing itself.
   if (!nextStatus) {
     return;
   }
@@ -121,6 +123,8 @@ const recordTaskActivity = async ({
   meta = {},
   session = null,
 }) => {
+  // TaskActivity is append-only audit history. We never "edit history";
+  // we create a new activity record for each important action.
   const [activity] = await TaskActivity.create(
     [
       {
@@ -144,6 +148,8 @@ const validateTaskRelations = async ({
   tagIds = [],
   session = null,
 }) => {
+  // assigneeIds and tagIds are validated against the current project so a task
+  // cannot point at users/tags from somewhere else.
   const assigneeList = toObjectIdList(assigneeIds);
   const tagList = toObjectIdList(tagIds);
 
@@ -227,6 +233,8 @@ const syncTaskFileAttachments = async ({
   session = null,
   now = new Date(),
 }) => {
+  // File sharing is handled here so create/update/delete task flows all use the
+  // same attach/detach rules.
   for (const file of attachFiles) {
     attachTaskToFile(file, taskId, now);
     await file.save(session ? { session } : undefined);
@@ -286,6 +294,8 @@ const createTaskWithWorkflow = async (user, payload) => {
 
   try {
     await session.withTransaction(async () => {
+      // Task creation is transactional because files/reminders/activity logs
+      // must stay consistent with the task row.
       const relationData = await validateTaskRelations({
         projectId: payload.projectId,
         assigneeIds: payload.assigneeIds,
@@ -301,6 +311,7 @@ const createTaskWithWorkflow = async (user, payload) => {
       let filesToAttach = [];
 
       if (fileIds.length > 0) {
+        // Normal users can only attach files they uploaded into their own vault.
         filesToAttach = await FileAsset.find({
           _id: { $in: fileIds },
           uploadedBy: user._id,
@@ -336,6 +347,8 @@ const createTaskWithWorkflow = async (user, payload) => {
       createdTaskId = task._id;
 
       if (payload.reminderAt) {
+        // A task reminder is a linked reminder document so it can participate
+        // in the same reminder engine as standalone reminders.
         const reminder = await createReminder({
           userId: user._id,
           payload: {
@@ -433,6 +446,8 @@ const updateTask = async (user, taskId, payload) => {
       task.updatedBy = user._id;
 
       if (payload.fileIds !== undefined) {
+        // The client sends the full desired file list. We diff current vs next
+        // to determine which attachments to add and which to remove.
         const nextFileIds = toObjectIdList(payload.fileIds);
         const currentFileIds = toObjectIdList(task.fileIds);
         const toAttach = nextFileIds.filter((id) => !currentFileIds.includes(id));
@@ -520,6 +535,8 @@ const updateTask = async (user, taskId, payload) => {
       const nextAssigneeIds = toSortedObjectIdList(task.assigneeIds);
       const nextTagIds = toSortedObjectIdList(task.tagIds);
 
+      // Each major change emits its own activity record so the UI can present
+      // a readable audit trail on the task detail screen.
       if (payload.status !== undefined && previousStatus !== task.status) {
         await recordTaskActivity({
           taskId: task._id,
@@ -620,6 +637,8 @@ const deleteTaskTree = async (task) => {
 
   try {
     await session.withTransaction(async () => {
+      // Shared files are detached from this task only.
+      // Files exclusively owned by this task are physically deleted.
       if (task.fileIds.length > 0) {
         const files = await FileAsset.find({ _id: { $in: task.fileIds } }).session(
           session,
@@ -650,6 +669,8 @@ const deleteTaskTree = async (task) => {
       }
 
       await Reminder.deleteMany({ taskId: task._id }).session(session);
+      // Checklist items, activity, and comments are task-scoped subdocuments in practice,
+      // so they are removed together with the parent task.
       await TaskChecklistItem.deleteMany({ taskId: task._id }).session(session);
       await TaskActivity.deleteMany({ taskId: task._id }).session(session);
       await TaskComment.deleteMany({ taskId: task._id }).session(session);

@@ -5,7 +5,7 @@ import '../constants/api_constants.dart';
 import '../../features/auth/services/session_storage.dart';
 
 class ChatService {
-  // Singleton pattern for global access
+  // Singleton keeps one shared socket connection for chat and reminders.
   static final ChatService _instance = ChatService._internal();
   factory ChatService() => _instance;
   ChatService._internal();
@@ -84,6 +84,7 @@ class ChatService {
   }
 
   void _registerSocketHandlers(Completer<void> connectCompleter) {
+    // Each socket event here mirrors a backend Socket.IO event name from socketRuntime.js.
     _socket!.onConnect((_) {
       debugPrint("[ChatService] Connected to Server successfully");
       if (!connectCompleter.isCompleted) connectCompleter.complete();
@@ -122,6 +123,8 @@ class ChatService {
   }
 
   void fetchPendingReminders() {
+    // Chat and reminders share one socket transport, so this service acts as the
+    // realtime bridge for both features.
     if (_socket != null && _socket!.connected) {
       _socket!.emit('reminder:fetch_pending');
     }

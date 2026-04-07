@@ -12,6 +12,8 @@ const WEEKDAY_NAMES = [
 ];
 
 const normalizeDaysOfWeek = (daysOfWeek = []) => [
+  // We accept short forms such as "mon" from clients but store full normalized
+  // weekday names in the database.
   ...new Set(
     (Array.isArray(daysOfWeek) ? daysOfWeek : [])
       .map((day) => day?.toString().trim().toLowerCase())
@@ -34,6 +36,8 @@ const getNextRecurringScheduledTime = (
   daysOfWeek = [],
   now = new Date(),
 ) => {
+  // Recurring reminders keep the original time-of-day and search ahead
+  // for the next allowed weekday.
   const normalizedDays = normalizeDaysOfWeek(daysOfWeek);
   if (normalizedDays.length === 0) {
     return null;
@@ -203,10 +207,13 @@ const processDueReminders = async (io) => {
   let processedCount = 0;
 
   for (const reminder of pendingReminders) {
+    // Real-time delivery happens through Socket.IO, not polling from the client.
     io.to(reminder.userId.toString()).emit('system:alert', {
       message: reminder.message,
     });
 
+    // One-time reminders complete after firing.
+    // Recurring reminders advance to the next eligible day instead.
     const nextScheduledTime = getNextRecurringScheduledTime(
       reminder.scheduledTime,
       reminder.daysOfWeek,

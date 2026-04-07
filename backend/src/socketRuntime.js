@@ -41,6 +41,7 @@ const initSocket = (server) => {
 
   io.use(async (socket, next) => {
     try {
+      // Socket connections authenticate with the same JWT used by HTTP APIs.
       const rawToken = socket.handshake.auth.token || '';
       const token = rawToken.startsWith('Bearer ')
         ? extractBearerToken(rawToken)
@@ -69,6 +70,8 @@ const initSocket = (server) => {
     const currentUserId = socket.user._id.toString();
     socket.join(currentUserId);
 
+    // Each user gets a room named after their id so reminder alerts can target
+    // exactly one connected user.
     console.log(`[Socket] User connected: ${socket.user.username}`);
 
     socket.on('chat:fetch_history', async () => {
@@ -146,6 +149,7 @@ const initSocket = (server) => {
 
     socket.on('chat:send', async (data) => {
       try {
+        // The typing event lets the frontend show a live AI-response indicator.
         socket.emit('chat:typing', { status: true });
 
         const lang = data?.lang || 'en';
@@ -163,6 +167,7 @@ const initSocket = (server) => {
         }
 
         if (result.reminder) {
+          // AI-created reminders are pushed back into the pending list immediately.
           await emitPendingReminders(socket, currentUserId);
         }
 

@@ -2,6 +2,8 @@ const mongoose = require('mongoose');
 
 const taskSchema = new mongoose.Schema(
   {
+    // Task is the central workflow entity of the project module.
+    // It now stores lifecycle timing, file links, reminder links, and assignment metadata.
     projectId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Project',

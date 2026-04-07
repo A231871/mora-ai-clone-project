@@ -3,6 +3,8 @@ const { getIo } = require('../socketRuntime');
 const { processDueReminders } = require('./reminder.service');
 
 const initCronJobs = () => {
+  // Minute-level polling is enough for class-project reminders and keeps
+  // the scheduling logic straightforward.
   cron.schedule('* * * * *', async () => {
     try {
       const io = getIo();

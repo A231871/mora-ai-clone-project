@@ -13,6 +13,11 @@ const server = http.createServer(app);
 const PORT = process.env.PORT || 5000;
 
 const startServer = async () => {
+  // Startup order matters:
+  // 1. Connect database
+  // 2. Repair admin role invariants
+  // 3. Enable Socket.IO
+  // 4. Start cron after the HTTP server is live
   await connectDB();
   await ensureAdminUser();
 
@@ -31,6 +36,7 @@ const startServer = async () => {
   });
 
   server.listen(PORT, () => {
+    // Cron depends on a working socket runtime because reminders emit live alerts.
     initCronJobs();
     const aiSummary = getAiRuntimeSummary();
     console.log(`Server running on http://localhost:${PORT}`);
