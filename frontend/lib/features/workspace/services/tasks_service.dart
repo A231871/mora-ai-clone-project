@@ -39,6 +39,8 @@ class TasksService {
     String description = '',
     String status = 'todo',
     String priority = 'medium',
+    DateTime? dueDate,
+    int? estimatedMinutes,
     List<String> assigneeIds = const <String>[],
     List<String> tagIds = const <String>[],
     List<String> fileIds = const <String>[],
@@ -52,6 +54,8 @@ class TasksService {
         'description': description,
         'status': status,
         'priority': priority,
+        if (dueDate != null) 'dueDate': dueDate.toIso8601String(),
+        if (estimatedMinutes != null) 'estimatedMinutes': estimatedMinutes,
         'assigneeIds': assigneeIds,
         'tagIds': tagIds,
         'fileIds': fileIds,
@@ -68,11 +72,15 @@ class TasksService {
     String? description,
     String? status,
     String? priority,
+    DateTime? dueDate,
+    int? estimatedMinutes,
     List<String>? assigneeIds,
     List<String>? tagIds,
     List<String>? fileIds,
     DateTime? reminderAt,
     bool clearReminder = false,
+    bool clearDueDate = false,
+    bool clearEstimatedMinutes = false,
   }) async {
     final rawTask = await _apiClient.patch(
       '/tasks/$taskId',
@@ -81,6 +89,10 @@ class TasksService {
         if (description != null) 'description': description,
         if (status != null) 'status': status,
         if (priority != null) 'priority': priority,
+        if (dueDate != null) 'dueDate': dueDate.toIso8601String(),
+        if (clearDueDate) 'dueDate': null,
+        if (estimatedMinutes != null) 'estimatedMinutes': estimatedMinutes,
+        if (clearEstimatedMinutes) 'estimatedMinutes': null,
         if (assigneeIds != null) 'assigneeIds': assigneeIds,
         if (tagIds != null) 'tagIds': tagIds,
         if (fileIds != null) 'fileIds': fileIds,
@@ -129,5 +141,50 @@ class TasksService {
 
   Future<void> deleteComment(String taskId, String commentId) async {
     await _apiClient.delete('/tasks/$taskId/comments/$commentId');
+  }
+
+  Future<List<TaskChecklistEntry>> listChecklist(String taskId) async {
+    final rawItems =
+        await _apiClient.get('/tasks/$taskId/checklist') as List<dynamic>;
+    return rawItems.map(TaskChecklistEntry.fromJson).toList(growable: false);
+  }
+
+  Future<TaskChecklistEntry> createChecklistItem(
+    String taskId, {
+    required String content,
+  }) async {
+    final rawItem = await _apiClient.post(
+      '/tasks/$taskId/checklist',
+      body: <String, dynamic>{'content': content},
+    );
+
+    return TaskChecklistEntry.fromJson(rawItem);
+  }
+
+  Future<TaskChecklistEntry> updateChecklistItem(
+    String taskId,
+    String itemId, {
+    String? content,
+    bool? isCompleted,
+  }) async {
+    final rawItem = await _apiClient.patch(
+      '/tasks/$taskId/checklist/$itemId',
+      body: <String, dynamic>{
+        if (content != null) 'content': content,
+        if (isCompleted != null) 'isCompleted': isCompleted,
+      },
+    );
+
+    return TaskChecklistEntry.fromJson(rawItem);
+  }
+
+  Future<void> deleteChecklistItem(String taskId, String itemId) async {
+    await _apiClient.delete('/tasks/$taskId/checklist/$itemId');
+  }
+
+  Future<List<TaskActivityEntry>> listActivity(String taskId) async {
+    final rawItems =
+        await _apiClient.get('/tasks/$taskId/activity') as List<dynamic>;
+    return rawItems.map(TaskActivityEntry.fromJson).toList(growable: false);
   }
 }

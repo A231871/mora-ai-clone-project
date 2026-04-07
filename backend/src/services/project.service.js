@@ -10,7 +10,11 @@ const Task = require('../models/Task');
 const TaskComment = require('../models/TaskComment');
 const User = require('../models/User');
 const ApiError = require('../utils/apiError');
-const { removePhysicalFiles } = require('./file.service');
+const {
+  detachTaskFromFile,
+  getFileAttachedTaskIds,
+  removePhysicalFiles,
+} = require('./file.service');
 
 const PROJECT_ROLE_WEIGHT = {
   viewer: 1,
@@ -198,14 +202,41 @@ const deleteProjectTree = async (projectId) => {
   const storagePaths = [];
 
   const taskIds = await Task.find({ projectId: project._id }).distinct('_id');
+  const taskIdStrings = uniqueObjectIds(taskIds);
   const fileDocs = await FileAsset.find({
     $or: [
       { ownerType: 'project', ownerId: project._id },
       { ownerType: 'task', ownerId: { $in: taskIds } },
+      { taskIds: { $in: taskIds } },
     ],
   });
 
-  storagePaths.push(...fileDocs.map((file) => file.storagePath));
+  const fileIdsToDelete = [];
+  for (const file of fileDocs) {
+    const attachedTaskIds = getFileAttachedTaskIds(file);
+    const remainingTaskIds = attachedTaskIds.filter(
+      (taskId) => !taskIdStrings.includes(taskId),
+    );
+    const isProjectOwnedFile =
+      file.ownerType === 'project' &&
+      file.ownerId?.toString() === project._id.toString();
+    const isLegacyProjectTaskFile =
+      file.ownerType === 'task' &&
+      file.ownerId &&
+      taskIdStrings.includes(file.ownerId.toString()) &&
+      remainingTaskIds.length === 0;
+
+    if (isProjectOwnedFile || isLegacyProjectTaskFile) {
+      storagePaths.push(file.storagePath);
+      fileIdsToDelete.push(file._id);
+      continue;
+    }
+
+    for (const taskId of taskIdStrings) {
+      detachTaskFromFile(file, taskId);
+    }
+    await file.save();
+  }
 
   await project.deleteOne();
   await ProjectMember.deleteMany({ projectId: project._id });
@@ -214,12 +245,9 @@ const deleteProjectTree = async (projectId) => {
   await Task.deleteMany({ projectId: project._id });
   await Reminder.deleteMany({ projectId: project._id });
   await ProjectInvite.deleteMany({ projectId: project._id });
-  await FileAsset.deleteMany({
-    $or: [
-      { ownerType: 'project', ownerId: project._id },
-      { ownerType: 'task', ownerId: { $in: taskIds } },
-    ],
-  });
+  if (fileIdsToDelete.length > 0) {
+    await FileAsset.deleteMany({ _id: { $in: fileIdsToDelete } });
+  }
 
   removePhysicalFiles(storagePaths);
 };

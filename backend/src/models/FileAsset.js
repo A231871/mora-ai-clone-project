@@ -19,6 +19,13 @@ const fileAssetSchema = new mongoose.Schema(
       default: null,
       index: true,
     },
+    taskIds: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Task',
+        index: true,
+      },
+    ],
     kind: {
       type: String,
       enum: ['image', 'pdf', 'doc', 'docx'],

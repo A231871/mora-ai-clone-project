@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -249,7 +251,7 @@ class _ProjectsListScreenState extends State<ProjectsListScreen> {
         backgroundColor: AppColors.bgCard,
         title:
             Text('Delete ${project.name}?', style: AppTextStyles.titleMedium),
-        content: Text(
+        content: const Text(
           'This removes related tasks, members, tags, reminders, and project files.',
           style: AppTextStyles.bodyMedium,
         ),
@@ -378,238 +380,303 @@ class _ProjectsListScreenState extends State<ProjectsListScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          const Text(
             'Browse accepted projects, filter by role, and sort by access level or recent activity.',
             style: AppTextStyles.bodySmall,
           ),
           const SizedBox(height: AppSpacing.md),
-          ExpandableFilterPanel(
-            title: 'Search & Filters',
-            summary: _projectFiltersSummary,
-            expanded: _filtersExpanded,
-            onExpandedChanged: (expanded) =>
-                setState(() => _filtersExpanded = expanded),
-            collapsedHint: 'Tap to search, filter, and sort accepted projects.',
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                TextField(
-                  controller: _searchController,
-                  onChanged: (_) => setState(() {}),
-                  style: AppTextStyles.bodyMedium,
-                  decoration: const InputDecoration(
-                    hintText: 'Search project name, description, or creator',
-                    prefixIcon: Icon(Icons.search, color: AppColors.primary),
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.md),
-                Wrap(
-                  spacing: AppSpacing.sm,
-                  runSpacing: AppSpacing.sm,
+          Expanded(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final maxFilterPanelHeight = constraints.maxHeight.isFinite
+                    ? math.max(160.0, constraints.maxHeight * 0.48)
+                    : double.infinity;
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    for (final option in const <(String, String)>[
-                      ('all', 'ALL'),
-                      ('owner', 'OWNER'),
-                      ('editor', 'EDITOR'),
-                      ('viewer', 'VIEWER'),
-                    ])
-                      ChoiceChip(
-                        label: Text(option.$2),
-                        selected: _roleFilter == option.$1,
-                        onSelected: (_) =>
-                            setState(() => _roleFilter = option.$1),
-                        selectedColor: AppColors.primary.withValues(alpha: 0.3),
-                        backgroundColor: AppColors.bgCard,
-                        side: BorderSide(
-                          color: _roleFilter == option.$1
-                              ? AppColors.primary
-                              : AppColors.textSecondary.withValues(alpha: 0.35),
+                    ConstrainedBox(
+                      constraints: BoxConstraints(
+                        maxHeight: maxFilterPanelHeight,
+                      ),
+                      child: ExpandableFilterPanel(
+                        title: 'Search & Filters',
+                        summary: _projectFiltersSummary,
+                        expanded: _filtersExpanded,
+                        onExpandedChanged: (expanded) =>
+                            setState(() => _filtersExpanded = expanded),
+                        collapsedHint:
+                            'Tap to search, filter, and sort accepted projects.',
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            TextField(
+                              controller: _searchController,
+                              onChanged: (_) => setState(() {}),
+                              style: AppTextStyles.bodyMedium,
+                              decoration: const InputDecoration(
+                                hintText:
+                                    'Search project name, description, or creator',
+                                prefixIcon: Icon(
+                                  Icons.search,
+                                  color: AppColors.primary,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: AppSpacing.md),
+                            Wrap(
+                              spacing: AppSpacing.sm,
+                              runSpacing: AppSpacing.sm,
+                              children: [
+                                for (final option in const <(String, String)>[
+                                  ('all', 'ALL'),
+                                  ('owner', 'OWNER'),
+                                  ('editor', 'EDITOR'),
+                                  ('viewer', 'VIEWER'),
+                                ])
+                                  ChoiceChip(
+                                    label: Text(option.$2),
+                                    selected: _roleFilter == option.$1,
+                                    onSelected: (_) =>
+                                        setState(() => _roleFilter = option.$1),
+                                    selectedColor: AppColors.primary.withValues(
+                                      alpha: 0.3,
+                                    ),
+                                    backgroundColor: AppColors.bgCard,
+                                    side: BorderSide(
+                                      color: _roleFilter == option.$1
+                                          ? AppColors.primary
+                                          : AppColors.textSecondary.withValues(
+                                              alpha: 0.35,
+                                            ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                            const SizedBox(height: AppSpacing.md),
+                            DropdownButtonFormField<String>(
+                              initialValue: _sortMode,
+                              dropdownColor: AppColors.bgCard,
+                              decoration: const InputDecoration(
+                                labelText: 'Sort',
+                              ),
+                              items: const [
+                                DropdownMenuItem(
+                                  value: 'recent',
+                                  child: Text('RECENT ACTIVITY'),
+                                ),
+                                DropdownMenuItem(
+                                  value: 'role_desc',
+                                  child: Text('ROLE: HIGH TO LOW'),
+                                ),
+                                DropdownMenuItem(
+                                  value: 'role_asc',
+                                  child: Text('ROLE: LOW TO HIGH'),
+                                ),
+                                DropdownMenuItem(
+                                  value: 'name',
+                                  child: Text('NAME'),
+                                ),
+                              ],
+                              onChanged: (value) {
+                                if (value == null) {
+                                  return;
+                                }
+                                setState(() => _sortMode = value);
+                              },
+                            ),
+                          ],
                         ),
                       ),
-                  ],
-                ),
-                const SizedBox(height: AppSpacing.md),
-                DropdownButtonFormField<String>(
-                  initialValue: _sortMode,
-                  dropdownColor: AppColors.bgCard,
-                  decoration: const InputDecoration(labelText: 'Sort'),
-                  items: const [
-                    DropdownMenuItem(
-                        value: 'recent', child: Text('RECENT ACTIVITY')),
-                    DropdownMenuItem(
-                        value: 'role_desc', child: Text('ROLE: HIGH TO LOW')),
-                    DropdownMenuItem(
-                        value: 'role_asc', child: Text('ROLE: LOW TO HIGH')),
-                    DropdownMenuItem(value: 'name', child: Text('NAME')),
-                  ],
-                  onChanged: (value) {
-                    if (value == null) {
-                      return;
-                    }
-                    setState(() => _sortMode = value);
-                  },
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          Expanded(
-            child: _loading
-                ? const Center(child: CircularProgressIndicator())
-                : _visibleProjects.isEmpty
-                    ? Center(
-                        child: WorkspaceEmptyState(
-                          icon: Icons.dashboard_customize_outlined,
-                          title: 'No Matching Projects',
-                          message: _projects.isEmpty
-                              ? 'Accepted projects will appear here after you create one or accept an invitation in Profile / Inbox.'
-                              : 'Try a different search, role filter, or sort mode.',
-                          actionLabel:
-                              _canCreateProjects ? 'Create Project' : null,
-                          onAction: _canCreateProjects
-                              ? () => _showProjectDialog()
-                              : null,
-                        ),
-                      )
-                    : ListView.separated(
-                        itemCount: _visibleProjects.length,
-                        separatorBuilder: (_, __) =>
-                            const SizedBox(height: AppSpacing.md),
-                        itemBuilder: (context, index) {
-                          final project = _visibleProjects[index];
-                          final isBusy = _busyProjectId == project.id;
-                          final canManageMetadata =
-                              project.canEditProjectMetadata;
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    Expanded(
+                      child: _loading
+                          ? const Center(child: CircularProgressIndicator())
+                          : _visibleProjects.isEmpty
+                              ? WorkspaceEmptyState(
+                                  icon: Icons.dashboard_customize_outlined,
+                                  title: 'No Matching Projects',
+                                  message: _projects.isEmpty
+                                      ? 'Accepted projects will appear here after you create one or accept an invitation in Profile / Inbox.'
+                                      : 'Try a different search, role filter, or sort mode.',
+                                  actionLabel: _canCreateProjects
+                                      ? 'Create Project'
+                                      : null,
+                                  onAction: _canCreateProjects
+                                      ? () => _showProjectDialog()
+                                      : null,
+                                  adaptiveToConstraints: true,
+                                )
+                              : ListView.separated(
+                                  itemCount: _visibleProjects.length,
+                                  separatorBuilder: (_, __) =>
+                                      const SizedBox(height: AppSpacing.md),
+                                  itemBuilder: (context, index) {
+                                    final project = _visibleProjects[index];
+                                    final isBusy = _busyProjectId == project.id;
+                                    final canManageMetadata =
+                                        project.canEditProjectMetadata;
 
-                          return MechaPanel(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Expanded(
+                                    return MechaPanel(
                                       child: Column(
                                         crossAxisAlignment:
                                             CrossAxisAlignment.start,
                                         children: [
-                                          Text(
-                                            project.name,
-                                            style: AppTextStyles.titleLarge,
-                                          ),
-                                          const SizedBox(height: AppSpacing.xs),
-                                          Text(
-                                            project.description.isEmpty
-                                                ? 'No description yet.'
-                                                : project.description,
-                                            style: AppTextStyles.bodyMedium,
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    _ProjectBadge(
-                                      label: project.visibility,
-                                      color: project.isShared
-                                          ? AppColors.statusGreen
-                                          : AppColors.primary,
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: AppSpacing.sm),
-                                Wrap(
-                                  spacing: AppSpacing.sm,
-                                  runSpacing: AppSpacing.sm,
-                                  children: [
-                                    if (project.currentRole != null)
-                                      _ProjectBadge(
-                                        label: project.currentRole!,
-                                        color: AppColors.accent,
-                                      ),
-                                    if (project.ownerUsers.isNotEmpty)
-                                      _ProjectBadge(
-                                        label:
-                                            'owners ${project.ownerUsers.length}',
-                                        color: AppColors.textSecondary,
-                                      ),
-                                  ],
-                                ),
-                                const SizedBox(height: AppSpacing.sm),
-                                Text(
-                                  'Updated ${formatShortDateTime(project.updatedAt)}'
-                                  '${project.createdByUser != null ? ' · creator ${project.createdByUser!.resolvedDisplayName}' : ''}',
-                                  style: AppTextStyles.caption,
-                                ),
-                                const SizedBox(height: AppSpacing.md),
-                                LayoutBuilder(
-                                  builder: (context, constraints) {
-                                    final actions = <Widget>[
-                                      MechaButton(
-                                        label: 'OPEN WORKSPACE',
-                                        onTap: () async {
-                                          final result = await context.push(
-                                            '/projects/${project.id}',
-                                          );
-                                          if (result == true) {
-                                            _loadProjects();
-                                          }
-                                        },
-                                      ),
-                                      if (canManageMetadata)
-                                        MechaButton(
-                                          label: 'EDIT',
-                                          variant: MechaButtonVariant.outlined,
-                                          onTap: isBusy
-                                              ? null
-                                              : () => _showProjectDialog(
-                                                    project: project,
-                                                  ),
-                                        ),
-                                      if (canManageMetadata)
-                                        MechaButton(
-                                          label: isBusy ? '...' : 'DELETE',
-                                          variant: MechaButtonVariant.outlined,
-                                          onTap: isBusy
-                                              ? null
-                                              : () => _deleteProject(project),
-                                        ),
-                                    ];
-
-                                    if (constraints.maxWidth < 540) {
-                                      return Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.stretch,
-                                        children: [
-                                          for (var i = 0;
-                                              i < actions.length;
-                                              i++) ...[
-                                            actions[i],
-                                            if (i < actions.length - 1)
+                                          Row(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Expanded(
+                                                child: Column(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
+                                                      project.name,
+                                                      style: AppTextStyles
+                                                          .titleLarge,
+                                                    ),
+                                                    const SizedBox(
+                                                      height: AppSpacing.xs,
+                                                    ),
+                                                    Text(
+                                                      project.description
+                                                              .isEmpty
+                                                          ? 'No description yet.'
+                                                          : project.description,
+                                                      style: AppTextStyles
+                                                          .bodyMedium,
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
                                               const SizedBox(
-                                                  height: AppSpacing.sm),
-                                          ],
-                                        ],
-                                      );
-                                    }
+                                                width: AppSpacing.md,
+                                              ),
+                                              _ProjectBadge(
+                                                label: project.visibility,
+                                                color: project.isShared
+                                                    ? AppColors.statusGreen
+                                                    : AppColors.primary,
+                                              ),
+                                            ],
+                                          ),
+                                          const SizedBox(height: AppSpacing.sm),
+                                          Wrap(
+                                            spacing: AppSpacing.sm,
+                                            runSpacing: AppSpacing.sm,
+                                            children: [
+                                              if (project.currentRole != null)
+                                                _ProjectBadge(
+                                                  label: project.currentRole!,
+                                                  color: AppColors.accent,
+                                                ),
+                                              if (project.ownerUsers.isNotEmpty)
+                                                _ProjectBadge(
+                                                  label:
+                                                      'owners ${project.ownerUsers.length}',
+                                                  color:
+                                                      AppColors.textSecondary,
+                                                ),
+                                            ],
+                                          ),
+                                          const SizedBox(height: AppSpacing.sm),
+                                          Text(
+                                            'Updated ${formatShortDateTime(project.updatedAt)}'
+                                            '${project.createdByUser != null ? ' · creator ${project.createdByUser!.resolvedDisplayName}' : ''}',
+                                            style: AppTextStyles.caption,
+                                          ),
+                                          const SizedBox(height: AppSpacing.md),
+                                          LayoutBuilder(
+                                            builder: (context, constraints) {
+                                              final actions = <Widget>[
+                                                MechaButton(
+                                                  label: 'OPEN WORKSPACE',
+                                                  onTap: () async {
+                                                    final result =
+                                                        await context.push(
+                                                      '/projects/${project.id}',
+                                                    );
+                                                    if (result == true) {
+                                                      _loadProjects();
+                                                    }
+                                                  },
+                                                ),
+                                                if (canManageMetadata)
+                                                  MechaButton(
+                                                    label: 'EDIT',
+                                                    variant: MechaButtonVariant
+                                                        .outlined,
+                                                    onTap: isBusy
+                                                        ? null
+                                                        : () =>
+                                                            _showProjectDialog(
+                                                              project: project,
+                                                            ),
+                                                  ),
+                                                if (canManageMetadata)
+                                                  MechaButton(
+                                                    label: isBusy
+                                                        ? '...'
+                                                        : 'DELETE',
+                                                    variant: MechaButtonVariant
+                                                        .outlined,
+                                                    onTap: isBusy
+                                                        ? null
+                                                        : () => _deleteProject(
+                                                              project,
+                                                            ),
+                                                  ),
+                                              ];
 
-                                    return Row(
-                                      children: [
-                                        for (var i = 0;
-                                            i < actions.length;
-                                            i++) ...[
-                                          Expanded(child: actions[i]),
-                                          if (i < actions.length - 1)
-                                            const SizedBox(
-                                                width: AppSpacing.sm),
+                                              if (constraints.maxWidth < 540) {
+                                                return Column(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment
+                                                          .stretch,
+                                                  children: [
+                                                    for (var i = 0;
+                                                        i < actions.length;
+                                                        i++) ...[
+                                                      actions[i],
+                                                      if (i <
+                                                          actions.length - 1)
+                                                        const SizedBox(
+                                                          height: AppSpacing.sm,
+                                                        ),
+                                                    ],
+                                                  ],
+                                                );
+                                              }
+
+                                              return Row(
+                                                children: [
+                                                  for (var i = 0;
+                                                      i < actions.length;
+                                                      i++) ...[
+                                                    Expanded(
+                                                      child: actions[i],
+                                                    ),
+                                                    if (i < actions.length - 1)
+                                                      const SizedBox(
+                                                        width: AppSpacing.sm,
+                                                      ),
+                                                  ],
+                                                ],
+                                              );
+                                            },
+                                          ),
                                         ],
-                                      ],
+                                      ),
                                     );
                                   },
                                 ),
-                              ],
-                            ),
-                          );
-                        },
-                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
           ),
         ],
       ),

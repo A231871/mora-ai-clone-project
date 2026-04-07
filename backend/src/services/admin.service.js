@@ -17,9 +17,19 @@ const {
   populateInviteQuery,
 } = require('./project.service');
 const { createReminder } = require('./reminder.service');
-const { deleteTaskTree, validateTaskRelations } = require('./task.service');
 const {
+  applyTaskLifecycleState,
+  buildInitialTaskLifecycleState,
+  deleteTaskTree,
+  normalizeEstimatedMinutes,
+  normalizeOptionalDate,
+  validateTaskRelations,
+} = require('./task.service');
+const {
+  attachTaskToFile,
   buildPublicFileUrl,
+  detachTaskFromFile,
+  getFileAttachedTaskIds,
   inferFileKind,
   removePhysicalFiles,
 } = require('./file.service');
@@ -31,7 +41,7 @@ const PROJECT_POPULATE_FIELDS =
 const TASK_OWNER_POPULATE_FIELDS =
   'title projectId status priority createdAt updatedAt';
 const FILE_POPULATE_FIELDS =
-  'kind originalName publicUrl ownerType ownerId mimeType size attachedAt createdAt updatedAt';
+  'kind originalName publicUrl ownerType ownerId taskIds mimeType size attachedAt createdAt updatedAt';
 const DEFAULT_PROJECT_TAGS = [
   { name: 'General', color: '#38bdf8' },
   { name: 'Urgent', color: '#fb7185' },
@@ -746,21 +756,31 @@ const createAdminTask = async (adminUser, payload = {}) => {
     });
 
     const fileIds = toObjectIdList(payload.fileIds);
+    let filesToAttach = [];
     if (fileIds.length > 0) {
-      const files = await FileAsset.find({ _id: { $in: fileIds } }).session(session);
-      if (files.length !== fileIds.length) {
+      filesToAttach = await FileAsset.find({ _id: { $in: fileIds } }).session(
+        session,
+      );
+      if (filesToAttach.length !== fileIds.length) {
         throw new ApiError(400, 'One or more fileIds are invalid');
       }
     }
 
+    const status = payload.status || 'todo';
+    const lifecycleState = buildInitialTaskLifecycleState(status);
     const [task] = await Task.create(
       [
         {
           projectId,
           title,
           description: trimOrNull(payload.description) || '',
-          status: payload.status || 'todo',
+          status,
           priority: payload.priority || 'medium',
+          dueDate: normalizeOptionalDate(payload.dueDate, 'dueDate') ?? null,
+          estimatedMinutes:
+            normalizeEstimatedMinutes(payload.estimatedMinutes) ?? null,
+          startedAt: lifecycleState.startedAt,
+          completedAt: lifecycleState.completedAt,
           assigneeIds: relationData.assigneeIds,
           tagIds: relationData.tagIds,
           fileIds,
@@ -790,17 +810,10 @@ const createAdminTask = async (adminUser, payload = {}) => {
     }
 
     if (fileIds.length > 0) {
-      await FileAsset.updateMany(
-        { _id: { $in: fileIds } },
-        {
-          $set: {
-            ownerType: 'task',
-            ownerId: task._id,
-            attachedAt: new Date(),
-          },
-        },
-        { session },
-      );
+      for (const file of filesToAttach) {
+        attachTaskToFile(file, task._id);
+        await file.save({ session });
+      }
     }
 
     await task.save({ session });
@@ -839,6 +852,7 @@ const updateAdminTask = async (adminUser, taskId, payload = {}) => {
 
   const session = await mongoose.startSession();
   await session.withTransaction(async () => {
+    const previousStatus = task.status;
     const relationData = await validateTaskRelations({
       projectId: task.projectId,
       assigneeIds:
@@ -856,11 +870,20 @@ const updateAdminTask = async (adminUser, taskId, payload = {}) => {
     }
 
     if (payload.status !== undefined) {
+      applyTaskLifecycleState(task, previousStatus, payload.status);
       task.status = payload.status;
     }
 
     if (payload.priority !== undefined) {
       task.priority = payload.priority;
+    }
+
+    if (payload.dueDate !== undefined) {
+      task.dueDate = normalizeOptionalDate(payload.dueDate, 'dueDate');
+    }
+
+    if (payload.estimatedMinutes !== undefined) {
+      task.estimatedMinutes = normalizeEstimatedMinutes(payload.estimatedMinutes);
     }
 
     task.assigneeIds = relationData.assigneeIds;
@@ -872,40 +895,33 @@ const updateAdminTask = async (adminUser, taskId, payload = {}) => {
       const currentFileIds = toObjectIdList(task.fileIds);
       const toAttach = nextFileIds.filter((id) => !currentFileIds.includes(id));
       const toDetach = currentFileIds.filter((id) => !nextFileIds.includes(id));
+      const touchedFileIds = [...new Set([...toAttach, ...toDetach])];
+      let touchedFiles = [];
 
-      if (toAttach.length > 0) {
-        const files = await FileAsset.find({ _id: { $in: toAttach } }).session(session);
-        if (files.length !== toAttach.length) {
-          throw new ApiError(400, 'One or more fileIds are invalid');
-        }
-
-        await FileAsset.updateMany(
-          { _id: { $in: toAttach } },
-          {
-            $set: {
-              ownerType: 'task',
-              ownerId: task._id,
-              attachedAt: new Date(),
-            },
-          },
-          { session },
-        );
+      if (touchedFileIds.length > 0) {
+        touchedFiles = await FileAsset.find({
+          _id: { $in: touchedFileIds },
+        }).session(session);
       }
 
-      if (toDetach.length > 0) {
-        await FileAsset.updateMany(
-          { _id: { $in: toDetach } },
-          {
-            $set: {
-              ownerType: 'unassigned',
-              attachedAt: null,
-            },
-            $unset: {
-              ownerId: 1,
-            },
-          },
-          { session },
+      if (toAttach.length > 0) {
+        const attachFiles = touchedFiles.filter((file) =>
+          toAttach.includes(file._id.toString()),
         );
+        if (attachFiles.length !== toAttach.length) {
+          throw new ApiError(400, 'One or more fileIds are invalid');
+        }
+      }
+
+      if (touchedFiles.length > 0) {
+        for (const file of touchedFiles) {
+          if (toAttach.includes(file._id.toString())) {
+            attachTaskToFile(file, task._id);
+          } else if (toDetach.includes(file._id.toString())) {
+            detachTaskFromFile(file, task._id);
+          }
+          await file.save({ session });
+        }
       }
 
       task.fileIds = nextFileIds;
@@ -1065,11 +1081,30 @@ const listAdminFiles = async (filters = {}) => {
   applyTextSearch(query, filters.q, ['originalName', 'mimeType']);
 
   if (filters.ownerType) {
-    query.ownerType = filters.ownerType;
+    if (filters.ownerType !== 'task') {
+      query.ownerType = filters.ownerType;
+    }
   }
 
   if (filters.ownerId) {
-    query.ownerId = ensureObjectId(filters.ownerId, 'ownerId');
+    const normalizedOwnerId = ensureObjectId(filters.ownerId, 'ownerId');
+    if (filters.ownerType === 'task') {
+      const taskOwnerQuery = {
+        $or: [
+        { ownerType: 'task', ownerId: normalizedOwnerId },
+        { taskIds: normalizedOwnerId },
+        ],
+      };
+
+      if (query.$or) {
+        query.$and = [{ $or: query.$or }, taskOwnerQuery];
+        delete query.$or;
+      } else {
+        Object.assign(query, taskOwnerQuery);
+      }
+    } else {
+      query.ownerId = normalizedOwnerId;
+    }
   }
 
   if (filters.kind) {
@@ -1115,6 +1150,7 @@ const createAdminFile = async (req, adminUser) => {
     uploadedBy: uploadedByUserId,
     ownerType,
     ownerId,
+    taskIds: ownerType === 'task' && ownerId ? [ownerId] : [],
     kind,
     originalName: req.file.originalname,
     storedName: req.file.filename,
@@ -1167,24 +1203,27 @@ const updateAdminFile = async (fileId, payload = {}) => {
     (nextOwnerId || null) !== (fileAsset.ownerId?.toString() || null);
 
   if (ownerChanged) {
-    if (fileAsset.ownerType === 'task' && fileAsset.ownerId) {
-      await Task.updateOne(
-        { _id: fileAsset.ownerId },
+    const previousTaskIds = getFileAttachedTaskIds(fileAsset);
+    if (previousTaskIds.length > 0) {
+      await Task.updateMany(
+        { _id: { $in: previousTaskIds } },
         { $pull: { fileIds: fileAsset._id } },
-      );
-    }
-
-    if (nextOwnerType === 'task' && nextOwnerId) {
-      await Task.updateOne(
-        { _id: nextOwnerId },
-        { $addToSet: { fileIds: fileAsset._id } },
       );
     }
 
     fileAsset.ownerType = nextOwnerType;
     fileAsset.ownerId = nextOwnerType === 'unassigned' ? null : nextOwnerId;
+    fileAsset.taskIds = nextOwnerType === 'task' && nextOwnerId ? [nextOwnerId] : [];
     fileAsset.attachedAt =
       nextOwnerType === 'unassigned' ? null : fileAsset.attachedAt || new Date();
+
+    const nextTaskIds = getFileAttachedTaskIds(fileAsset);
+    if (nextTaskIds.length > 0) {
+      await Task.updateMany(
+        { _id: { $in: nextTaskIds } },
+        { $addToSet: { fileIds: fileAsset._id } },
+      );
+    }
   }
 
   await fileAsset.save();
@@ -1197,9 +1236,10 @@ const deleteAdminFile = async (fileId) => {
     throw new ApiError(404, 'File not found');
   }
 
-  if (fileAsset.ownerType === 'task' && fileAsset.ownerId) {
-    await Task.updateOne(
-      { _id: fileAsset.ownerId },
+  const linkedTaskIds = getFileAttachedTaskIds(fileAsset);
+  if (linkedTaskIds.length > 0) {
+    await Task.updateMany(
+      { _id: { $in: linkedTaskIds } },
       { $pull: { fileIds: fileAsset._id } },
     );
   }

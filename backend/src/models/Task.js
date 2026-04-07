@@ -30,6 +30,25 @@ const taskSchema = new mongoose.Schema(
       default: 'medium',
       index: true,
     },
+    dueDate: {
+      type: Date,
+      default: null,
+      index: true,
+    },
+    estimatedMinutes: {
+      type: Number,
+      default: null,
+      min: 0,
+    },
+    startedAt: {
+      type: Date,
+      default: null,
+    },
+    completedAt: {
+      type: Date,
+      default: null,
+      index: true,
+    },
     assigneeIds: [
       {
         type: mongoose.Schema.Types.ObjectId,

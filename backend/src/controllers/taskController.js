@@ -1,14 +1,19 @@
 const Task = require('../models/Task');
 const asyncHandler = require('../utils/asyncHandler');
 const {
+  createTaskChecklistItem,
   createTaskComment,
   createTaskWithWorkflow,
   deleteTask,
+  deleteTaskChecklistItem,
   deleteTaskComment,
   findTaskForUser,
+  listTaskActivity,
+  listTaskChecklistItems,
   listTaskComments,
   listTasksForUser,
   updateTask,
+  updateTaskChecklistItem,
   updateTaskComment,
 } = require('../services/task.service');
 
@@ -33,7 +38,7 @@ const getTask = asyncHandler(async (req, res) => {
   const task = await Task.findById(req.params.taskId)
     .populate('assigneeIds', 'username email profile')
     .populate('tagIds', 'name color')
-    .populate('fileIds', 'originalName kind publicUrl');
+    .populate('fileIds', 'originalName kind publicUrl taskIds mimeType size');
 
   res.status(200).json({
     success: true,
@@ -62,6 +67,52 @@ const getTaskComments = asyncHandler(async (req, res) => {
   res.status(200).json({
     success: true,
     data: comments,
+  });
+});
+
+const getTaskChecklist = asyncHandler(async (req, res) => {
+  const items = await listTaskChecklistItems(req.user, req.params.taskId);
+  res.status(200).json({
+    success: true,
+    data: items,
+  });
+});
+
+const createChecklistItem = asyncHandler(async (req, res) => {
+  const item = await createTaskChecklistItem(req.user, req.params.taskId, req.body);
+  res.status(201).json({
+    success: true,
+    data: item,
+  });
+});
+
+const patchChecklistItem = asyncHandler(async (req, res) => {
+  const item = await updateTaskChecklistItem(
+    req.user,
+    req.params.taskId,
+    req.params.itemId,
+    req.body,
+  );
+
+  res.status(200).json({
+    success: true,
+    data: item,
+  });
+});
+
+const destroyChecklistItem = asyncHandler(async (req, res) => {
+  await deleteTaskChecklistItem(req.user, req.params.taskId, req.params.itemId);
+  res.status(200).json({
+    success: true,
+    message: 'Checklist item deleted successfully',
+  });
+});
+
+const getTaskActivity = asyncHandler(async (req, res) => {
+  const activity = await listTaskActivity(req.user, req.params.taskId);
+  res.status(200).json({
+    success: true,
+    data: activity,
   });
 });
 
@@ -96,12 +147,17 @@ const destroyComment = asyncHandler(async (req, res) => {
 
 module.exports = {
   createComment,
+  createChecklistItem,
   createTask,
   destroyComment,
+  destroyChecklistItem,
   destroyTask,
+  getTaskActivity,
+  getTaskChecklist,
   getTask,
   getTaskComments,
   listTasks,
+  patchChecklistItem,
   patchComment,
   patchTask,
 };

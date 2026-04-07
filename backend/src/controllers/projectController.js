@@ -18,6 +18,10 @@ const {
   updateProjectMember,
   updateProjectTag,
 } = require('../services/project.service');
+const {
+  getProjectAnalyticsOverview,
+  getProjectAnalyticsWorkload,
+} = require('../services/projectAnalytics.service');
 
 const listProjects = asyncHandler(async (req, res) => {
   const projects = await listProjectsForUser(req.user);
@@ -160,6 +164,30 @@ const destroyTag = asyncHandler(async (req, res) => {
   });
 });
 
+const getAnalyticsOverview = asyncHandler(async (req, res) => {
+  const analytics = await getProjectAnalyticsOverview(
+    req.user,
+    req.params.projectId,
+  );
+
+  res.status(200).json({
+    success: true,
+    data: analytics,
+  });
+});
+
+const getAnalyticsWorkload = asyncHandler(async (req, res) => {
+  const analytics = await getProjectAnalyticsWorkload(
+    req.user,
+    req.params.projectId,
+  );
+
+  res.status(200).json({
+    success: true,
+    data: analytics,
+  });
+});
+
 module.exports = {
   createProject,
   createInvite,
@@ -168,6 +196,8 @@ module.exports = {
   destroyProject,
   destroyProjectMember,
   destroyTag,
+  getAnalyticsOverview,
+  getAnalyticsWorkload,
   getProject,
   getProjectInvites,
   getProjectMembers,

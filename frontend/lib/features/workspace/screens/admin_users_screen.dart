@@ -118,8 +118,9 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: AppColors.bgCard,
-        title: Text('Delete ${user.username}?', style: AppTextStyles.titleMedium),
-        content: Text(
+        title:
+            Text('Delete ${user.username}?', style: AppTextStyles.titleMedium),
+        content: const Text(
           'This removes the account and any server-side access tied to it.',
           style: AppTextStyles.bodyMedium,
         ),
@@ -211,7 +212,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
             child: _loading
                 ? const Center(child: CircularProgressIndicator())
                 : _forbidden
-                    ? Center(
+                    ? const Center(
                         child: WorkspaceEmptyState(
                           icon: Icons.lock_outline,
                           title: 'Admin Access Required',
@@ -220,7 +221,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                         ),
                       )
                     : _users.isEmpty
-                        ? Center(
+                        ? const Center(
                             child: WorkspaceEmptyState(
                               icon: Icons.people_outline,
                               title: 'No Users Found',
@@ -249,7 +250,8 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                                             children: [
                                               Text(
                                                 user.resolvedDisplayName,
-                                                style: AppTextStyles.titleMedium,
+                                                style:
+                                                    AppTextStyles.titleMedium,
                                               ),
                                               const SizedBox(
                                                 height: AppSpacing.xs,
@@ -264,8 +266,8 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                                         if (isSelf)
                                           Text(
                                             'YOU',
-                                            style: AppTextStyles.caption
-                                                .copyWith(
+                                            style:
+                                                AppTextStyles.caption.copyWith(
                                               color: AppColors.primary,
                                             ),
                                           ),
@@ -277,7 +279,8 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                                       runSpacing: AppSpacing.sm,
                                       children: [
                                         _MetaPill(
-                                          label: 'ROLE ${user.systemRole.toUpperCase()}',
+                                          label:
+                                              'ROLE ${user.systemRole.toUpperCase()}',
                                         ),
                                         _MetaPill(
                                           label:
@@ -311,7 +314,8 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                                                 ? null
                                                 : (value) {
                                                     if (value == null ||
-                                                        value == user.systemRole) {
+                                                        value ==
+                                                            user.systemRole) {
                                                       return;
                                                     }
                                                     _updateRole(user, value);
@@ -338,8 +342,8 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                                                 ),
                                           label: Text(
                                             'DELETE',
-                                            style: AppTextStyles.caption
-                                                .copyWith(
+                                            style:
+                                                AppTextStyles.caption.copyWith(
                                               color: Colors.redAccent,
                                             ),
                                           ),
