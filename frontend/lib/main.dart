@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'core/theme/app_theme.dart';
 import 'core/router/app_router.dart';
+import 'core/services/app_settings_service.dart';
 import 'core/services/notification_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -9,8 +10,11 @@ import 'core/providers/language_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await AppSettingsService.instance.ensureInitialized();
   await NotificationService().init();
-  await NotificationService().requestPermissions();
+  if (await NotificationService().isEnabled()) {
+    await NotificationService().requestPermissions();
+  }
   runApp(const ProviderScope(child: ShizukiApp()));
 }
 

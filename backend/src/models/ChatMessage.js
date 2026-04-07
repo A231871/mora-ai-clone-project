@@ -16,10 +16,19 @@ const chatMessageSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  lang: {
+    type: String,
+    default: 'en'
+  },
+  source: {
+    type: String,
+    enum: ['socket', 'http'],
+    default: 'socket'
+  },
   timestamp: {
     type: Date,
     default: Date.now
   }
-});
+}, { timestamps: true });
 
 module.exports = mongoose.model('ChatMessage', chatMessageSchema);

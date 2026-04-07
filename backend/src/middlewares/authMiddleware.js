@@ -1,25 +1,55 @@
-const jwt = require('jsonwebtoken');
+const User = require('../models/User');
+const ApiError = require('../utils/apiError');
+const { verifyAccessToken } = require('../services/auth.service');
 
-const protect = (req, res, next) => {
-  let token;
-
-  if (
-    req.headers.authorization &&
-    req.headers.authorization.startsWith('Bearer')
-  ) {
-    try {
-      token = req.headers.authorization.split(' ')[1];
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      req.user = decoded; // Contains userId inside or _id based on schema
-      next();
-    } catch (error) {
-      return res.status(401).json({ success: false, message: 'Not authorized, token failed' });
-    }
+const extractBearerToken = (authorizationHeader = '') => {
+  if (!authorizationHeader.startsWith('Bearer ')) {
+    return null;
   }
 
-  if (!token) {
-    return res.status(401).json({ success: false, message: 'Not authorized, no token' });
+  return authorizationHeader.split(' ')[1];
+};
+
+const protect = async (req, _res, next) => {
+  try {
+    const token = extractBearerToken(req.headers.authorization || '');
+    if (!token) {
+      throw new ApiError(401, 'Not authorized, no token');
+    }
+
+    const decoded = verifyAccessToken(token);
+    const user = await User.findById(decoded.userId).select('-password');
+
+    if (!user) {
+      throw new ApiError(401, 'Not authorized, user does not exist');
+    }
+
+    req.user = user;
+    req.auth = decoded;
+    next();
+  } catch (error) {
+    next(
+      error instanceof ApiError
+        ? error
+        : new ApiError(401, 'Not authorized, token failed'),
+    );
   }
 };
 
-module.exports = { protect };
+const authorizeSystemRoles = (...roles) => (req, _res, next) => {
+  if (!req.user) {
+    return next(new ApiError(401, 'Authentication required'));
+  }
+
+  if (!roles.includes(req.user.systemRole)) {
+    return next(new ApiError(403, 'You do not have permission for this action'));
+  }
+
+  return next();
+};
+
+module.exports = {
+  authorizeSystemRoles,
+  extractBearerToken,
+  protect,
+};

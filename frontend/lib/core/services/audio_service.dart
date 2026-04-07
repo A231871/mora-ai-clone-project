@@ -1,5 +1,7 @@
 import 'package:audioplayers/audioplayers.dart';
 
+import 'app_settings_service.dart';
+
 class AudioService {
   static final AudioService _instance = AudioService._internal();
   factory AudioService() => _instance;
@@ -7,20 +9,27 @@ class AudioService {
 
   final AudioPlayer _uiPlayer = AudioPlayer();
   double _masterVolume = 0.75;
+  bool _initialized = false;
 
   Future<void> init() async {
+    _masterVolume = await AppSettingsService.instance.getMasterVolume();
     await _uiPlayer.setVolume(_masterVolume);
-    // Pre-load the beep sound if desired, or just set audio context
     await _uiPlayer.setSource(AssetSource('sounds/beep.wav'));
+    _initialized = true;
   }
 
-  void setMasterVolume(double volume) {
+  double get masterVolume => _masterVolume;
+
+  Future<void> setMasterVolume(double volume) async {
     _masterVolume = volume;
-    _uiPlayer.setVolume(_masterVolume);
+    await AppSettingsService.instance.setMasterVolume(volume);
+    await _uiPlayer.setVolume(_masterVolume);
   }
 
   Future<void> playBeep() async {
-    // Stop any currently playing UI sound (if overlapping rapidly)
+    if (!_initialized) {
+      await init();
+    }
     await _uiPlayer.stop();
     await _uiPlayer.play(AssetSource('sounds/beep.wav'), volume: _masterVolume);
   }

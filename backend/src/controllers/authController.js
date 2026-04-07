@@ -1,119 +1,222 @@
-const User = require('../models/User');
 const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
 const { OAuth2Client } = require('google-auth-library');
+
+const User = require('../models/User');
+const asyncHandler = require('../utils/asyncHandler');
+const ApiError = require('../utils/apiError');
+const {
+  buildAuthPayload,
+  revokeAllSessionsForUser,
+  revokeRefreshToken,
+  rotateRefreshToken,
+  sanitizeUser,
+} = require('../services/auth.service');
 
 const googleOAuthClient = new OAuth2Client();
 
-// Register a new user
-exports.register = async (req, res) => {
-    try {
-        const { username, password } = req.body;
+const getRequestMeta = (req) => ({
+  ipAddress: req.ip,
+  userAgent: req.get('user-agent') || '',
+});
 
-        // Check if user exists
-        const existingUser = await User.findOne({ username });
-        if (existingUser) return res.status(400).json({ error: 'Username already taken!' });
+const buildUniqueUsername = async (baseUsername) => {
+  let username = baseUsername;
+  let suffix = 0;
 
-        // Hash password
-        const hashedPassword = await bcrypt.hash(password, 10);
+  while (await User.findOne({ username })) {
+    suffix += 1;
+    username = `${baseUsername}_${suffix}`;
+  }
 
-        // Create user
-        const newUser = new User({ username, password: hashedPassword });
-        await newUser.save();
-
-        res.status(201).json({ message: 'User registered successfully!' });
-    } catch (error) {
-        res.status(500).json({ error: 'Server error during registration.' });
-    }
+  return username;
 };
 
-// Login user
-exports.login = async (req, res) => {
-    try {
-        const { username, password } = req.body;
+const register = asyncHandler(async (req, res) => {
+  const { username, password, email } = req.body;
 
-        // Find user
-        const user = await User.findOne({ username });
-        if (!user) return res.status(400).json({ error: 'User not found!' });
+  if (!username || !password) {
+    throw new ApiError(400, 'username and password are required');
+  }
 
-        if (!user.password) {
-            return res.status(400).json({ error: 'This account uses Google sign-in.' });
-        }
+  const existingUser = await User.findOne({
+    $or: [{ username }, ...(email ? [{ email }] : [])],
+  });
+  if (existingUser) {
+    throw new ApiError(400, 'Username or email already taken');
+  }
 
-        const isMatch = await bcrypt.compare(password, user.password);
-        if (!isMatch) return res.status(400).json({ error: 'Invalid credentials!' });
+  const userCount = await User.countDocuments();
+  const hashedPassword = await bcrypt.hash(password, 10);
 
-        // Generate Token
-        const token = jwt.sign(
-            { userId: user._id, username: user.username },
-            process.env.JWT_SECRET,
-            { expiresIn: '7d' }
-        );
+  const newUser = await User.create({
+    username,
+    email: email || undefined,
+    password: hashedPassword,
+    systemRole: userCount === 0 ? 'admin' : 'member',
+    profile: {
+      displayName: username,
+      bio: '',
+    },
+  });
 
-        res.status(200).json({ 
-            message: 'Login successful!', 
-            token,
-            avatarConfig: user.avatarConfig 
-        });
-    } catch (error) {
-        res.status(500).json({ error: 'Server error during login.' });
+  res.status(201).json({
+    success: true,
+    message: 'User registered successfully!',
+    user: sanitizeUser(newUser),
+  });
+});
+
+const login = asyncHandler(async (req, res) => {
+  const { username, password } = req.body;
+
+  if (!username || !password) {
+    throw new ApiError(400, 'username and password are required');
+  }
+
+  const user = await User.findOne({ username });
+  if (!user) {
+    throw new ApiError(400, 'User not found!');
+  }
+
+  if (!user.password) {
+    throw new ApiError(400, 'This account uses Google sign-in.');
+  }
+
+  const isMatch = await bcrypt.compare(password, user.password);
+  if (!isMatch) {
+    throw new ApiError(400, 'Invalid credentials!');
+  }
+
+  user.lastLoginAt = new Date();
+  await user.save();
+
+  res.status(200).json(await buildAuthPayload(user, getRequestMeta(req)));
+});
+
+const googleLogin = asyncHandler(async (req, res) => {
+  const { idToken } = req.body;
+  if (!idToken) {
+    throw new ApiError(400, 'idToken is required');
+  }
+
+  const audience = process.env.GOOGLE_CLIENT_ID;
+  if (!audience) {
+    throw new ApiError(503, 'Google sign-in is not configured on the server.');
+  }
+
+  const ticket = await googleOAuthClient.verifyIdToken({
+    idToken,
+    audience,
+  });
+  const payload = ticket.getPayload();
+  if (!payload || !payload.sub) {
+    throw new ApiError(401, 'Invalid Google token');
+  }
+
+  const googleId = payload.sub;
+  const email = (payload.email || '').trim().toLowerCase();
+
+  let user = await User.findOne({
+    $or: [{ googleId }, ...(email ? [{ email }] : [])],
+  });
+
+  if (!user) {
+    const baseUsername =
+      email && email.includes('@')
+        ? email.split('@')[0]
+        : `user_${googleId.slice(0, 8)}`;
+
+    const username = await buildUniqueUsername(baseUsername);
+    const userCount = await User.countDocuments();
+
+    user = await User.create({
+      username,
+      email: email || undefined,
+      password: null,
+      googleId,
+      systemRole: userCount === 0 ? 'admin' : 'member',
+      profile: {
+        displayName: payload.name || username,
+        bio: '',
+      },
+    });
+  } else if (!user.googleId) {
+    user.googleId = googleId;
+  }
+
+  if (email) {
+    const currentEmail = (user.email || '').trim().toLowerCase();
+    if (!currentEmail) {
+      const conflictingEmailUser = await User.findOne({
+        _id: { $ne: user._id },
+        email,
+      });
+
+      if (!conflictingEmailUser) {
+        user.email = email;
+      }
     }
-};
+  }
 
-exports.googleLogin = async (req, res) => {
-    try {
-        const { idToken } = req.body;
-        if (!idToken) {
-            return res.status(400).json({ error: 'idToken is required' });
-        }
+  user.lastLoginAt = new Date();
+  await user.save();
 
-        const audience = process.env.GOOGLE_CLIENT_ID;
-        if (!audience) {
-            return res.status(503).json({ error: 'Google sign-in is not configured on the server.' });
-        }
+  res.status(200).json(await buildAuthPayload(user, getRequestMeta(req)));
+});
 
-        const ticket = await googleOAuthClient.verifyIdToken({
-            idToken,
-            audience,
-        });
-        const payload = ticket.getPayload();
-        if (!payload || !payload.sub) {
-            return res.status(401).json({ error: 'Invalid Google token' });
-        }
+const refresh = asyncHandler(async (req, res) => {
+  const { refreshToken } = req.body;
+  const refreshedSession = await rotateRefreshToken(refreshToken, getRequestMeta(req));
+  refreshedSession.user.lastLoginAt = new Date();
+  await refreshedSession.user.save();
 
-        const googleId = payload.sub;
-        const email = (payload.email || '').trim();
+  res.status(200).json({
+    success: true,
+    message: 'Token refreshed successfully',
+    token: refreshedSession.token,
+    refreshToken: refreshedSession.refreshToken,
+    avatarConfig: refreshedSession.user.avatarConfig,
+    user: sanitizeUser(refreshedSession.user),
+  });
+});
 
-        let user = await User.findOne({ googleId });
-        if (!user) {
-            let base = email && email.includes('@') ? email.split('@')[0] : `user_${googleId.slice(0, 8)}`;
-            let username = base;
-            let suffix = 0;
-            while (await User.findOne({ username })) {
-                suffix += 1;
-                username = `${base}_${suffix}`;
-            }
+const logout = asyncHandler(async (req, res) => {
+  const { refreshToken } = req.body;
+  const revokedCount = await revokeRefreshToken(
+    refreshToken,
+    req.user ? req.user._id : null,
+  );
 
-            user = await User.create({
-                username,
-                password: null,
-                googleId,
-            });
-        }
+  res.status(200).json({
+    success: true,
+    message:
+      revokedCount > 0
+        ? 'Logged out successfully'
+        : 'No active matching session was found',
+  });
+});
 
-        const token = jwt.sign(
-            { userId: user._id, username: user.username },
-            process.env.JWT_SECRET,
-            { expiresIn: '7d' }
-        );
+const logoutAll = asyncHandler(async (req, res) => {
+  const revokedCount = await revokeAllSessionsForUser(req.user._id);
+  res.status(200).json({
+    success: true,
+    message: `Revoked ${revokedCount} active session(s)`,
+  });
+});
 
-        res.status(200).json({
-            message: 'Login successful!',
-            token,
-            avatarConfig: user.avatarConfig,
-        });
-    } catch (error) {
-        console.error('googleLogin:', error);
-        res.status(401).json({ error: 'Google authentication failed' });
-    }
+const me = asyncHandler(async (req, res) => {
+  res.status(200).json({
+    success: true,
+    data: sanitizeUser(req.user),
+  });
+});
+
+module.exports = {
+  googleLogin,
+  login,
+  logout,
+  logoutAll,
+  me,
+  refresh,
+  register,
 };

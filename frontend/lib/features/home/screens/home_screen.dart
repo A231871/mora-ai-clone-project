@@ -1,15 +1,14 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:frontend/l10n/app_localizations.dart';
 import 'package:go_router/go_router.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/services/voice_service.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../auth/services/session_storage.dart';
 import '../../../shared/models/shizuki_dialogue_catalog.dart';
 import '../../../shared/widgets/glassmorphism_button.dart';
 import '../../../shared/widgets/grid_background.dart';
@@ -32,6 +31,7 @@ class _HomeScreenState extends State<HomeScreen> {
   static const double _zoomStep = 0.12;
 
   String _username = 'SYNCING...';
+  String _systemRole = 'MEMBER';
   String _currentTime = '--:--';
   Timer? _clockTimer;
   Timer? _dialogueTimer;
@@ -77,27 +77,27 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _loadSessionInfo() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('jwt_token');
-      if (token != null) {
-        final parts = token.split('.');
-        if (parts.length >= 2) {
-          final normalized = base64Url.normalize(parts[1]);
-          final payloadStr = utf8.decode(base64Url.decode(normalized));
-          final data = jsonDecode(payloadStr);
-          if (mounted) {
-            setState(() {
-              _username =
-                  data['username']?.toString().toUpperCase() ?? 'COMMANDER';
-            });
-          }
-        }
-      } else if (mounted) {
-        setState(() => _username = 'GUEST');
+      final user = await SessionStorage.getCurrentUser();
+      if (!mounted) {
+        return;
+      }
+      if (user != null) {
+        setState(() {
+          _username = user.resolvedDisplayName.toUpperCase();
+          _systemRole = user.systemRole.toUpperCase();
+        });
+      } else {
+        setState(() {
+          _username = 'GUEST';
+          _systemRole = 'OFFLINE';
+        });
       }
     } catch (_) {
       if (mounted) {
-        setState(() => _username = 'COMMANDER');
+        setState(() {
+          _username = 'COMMANDER';
+          _systemRole = 'UNKNOWN';
+        });
       }
     }
   }
@@ -252,6 +252,10 @@ class _HomeScreenState extends State<HomeScreen> {
                             ? AppColors.statusGreen
                             : AppColors.accent,
                       ),
+                      StatusChip(
+                        label: _systemRole,
+                        color: AppColors.primary,
+                      ),
                     ],
                   ),
                 ),
@@ -338,17 +342,24 @@ class _HomeScreenState extends State<HomeScreen> {
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       Text(
-                                        loc.quickAccess,
+                                        'MISSION LAUNCHER',
                                         style: AppTextStyles.sectionLabel,
+                                      ),
+                                      const SizedBox(height: AppSpacing.xs),
+                                      Text(
+                                        'Workspace modules route from home while chat and reminders stay live.',
+                                        style: AppTextStyles.bodySmall,
+                                        textAlign: TextAlign.center,
                                       ),
                                       const SizedBox(height: AppSpacing.md),
                                       Padding(
                                         padding: const EdgeInsets.symmetric(
-                                          horizontal: AppSpacing.xl,
+                                          horizontal: AppSpacing.lg,
                                         ),
-                                        child: Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.spaceEvenly,
+                                        child: Wrap(
+                                          alignment: WrapAlignment.center,
+                                          spacing: AppSpacing.lg,
+                                          runSpacing: AppSpacing.md,
                                           children: [
                                             GlassmorphismButton(
                                               icon: Icons.chat_bubble_outline,
@@ -365,12 +376,42 @@ class _HomeScreenState extends State<HomeScreen> {
                                               ),
                                             ),
                                             GlassmorphismButton(
+                                              icon: Icons.dashboard_outlined,
+                                              label: 'Projects',
+                                              onTap: () => context.push(
+                                                '/projects',
+                                              ),
+                                            ),
+                                            GlassmorphismButton(
+                                              icon: Icons.folder_copy_outlined,
+                                              label: 'Files',
+                                              onTap: () => context.push(
+                                                '/files',
+                                              ),
+                                            ),
+                                            GlassmorphismButton(
+                                              icon: Icons.person_outline,
+                                              label: 'Profile',
+                                              onTap: () => context.push(
+                                                '/profile',
+                                              ),
+                                            ),
+                                            GlassmorphismButton(
                                               icon: Icons.settings_outlined,
                                               label: loc.config,
                                               onTap: () => context.push(
                                                 '/config',
                                               ),
                                             ),
+                                            if (_systemRole == 'ADMIN')
+                                              GlassmorphismButton(
+                                                icon: Icons
+                                                    .admin_panel_settings_outlined,
+                                                label: 'Admin',
+                                                onTap: () => context.push(
+                                                  '/admin',
+                                                ),
+                                              ),
                                           ],
                                         ),
                                       ),

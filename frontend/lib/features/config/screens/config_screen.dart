@@ -1,16 +1,25 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/providers/language_provider.dart';
-import 'package:frontend/l10n/app_localizations.dart';
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:permission_handler/permission_handler.dart';
+
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
-import '../../../core/theme/app_text_styles.dart';
-import '../../../shared/widgets/grid_background.dart';
-import '../../../shared/widgets/mecha_app_bar.dart';
-import '../../../shared/widgets/mecha_button.dart';
-import '../../../core/services/voice_service.dart';
+import '../../../core/providers/language_provider.dart';
+import '../../../core/services/app_settings_service.dart';
 import '../../../core/services/audio_service.dart';
+import '../../../core/services/notification_service.dart';
+import '../../../core/services/voice_service.dart';
+import '../../../core/theme/app_text_styles.dart';
+import '../../../shared/models/workspace_models.dart';
+import '../../../shared/widgets/mecha_button.dart';
+import '../../../shared/widgets/mecha_panel.dart';
+import '../../../shared/widgets/responsive_action_group.dart';
+import '../../../shared/widgets/workspace_screen_shell.dart';
+import '../../auth/services/auth_service.dart';
+import '../../auth/services/session_storage.dart';
 
 class ConfigScreen extends ConsumerStatefulWidget {
   const ConfigScreen({super.key});
@@ -20,273 +29,413 @@ class ConfigScreen extends ConsumerStatefulWidget {
 }
 
 class _ConfigScreenState extends ConsumerState<ConfigScreen> {
-  double _masterVol = 0.75;
-  double _effectVol = 0.50; // We keep _effectVol but we'll rename its label if it wasn't voice, wait, we'll map _effectVol to Voice Volume and _masterVol to AudioService
-  String _selectedVoice = 'Voice A';
-
-  final VoiceService _voiceService = VoiceService();
   final AudioService _audioService = AudioService();
+  final VoiceService _voiceService = VoiceService();
+  final NotificationService _notificationService = NotificationService();
+  final AuthService _authService = AuthService();
 
-  final Map<String, bool> _togglesStates = {
-    'darkMode': true,
-    'notifications': true,
-    'shizukiVoice': true,
-    'hapticFeedback': false,
-    'privacyShield': true,
-  };
+  double _masterVolume = 0.75;
+  double _voiceVolume = 0.5;
+  bool _notificationsEnabled = true;
+  bool _voiceEnabled = true;
+  bool _loading = true;
+  bool _loggingOut = false;
+  AppUser? _currentUser;
+  PermissionStatus _notificationPermission = PermissionStatus.denied;
+  PermissionStatus _microphonePermission = PermissionStatus.denied;
 
   @override
   void initState() {
     super.initState();
-    _voiceService.init();
-    _audioService.init();
+    _loadSettings();
   }
 
-  void _showLogoutDialog(BuildContext context) {
-    final loc = AppLocalizations.of(context)!;
-    showDialog(
-      context: context,
-      builder: (BuildContext dialogContext) {
-        return AlertDialog(
-          backgroundColor: AppColors.bgDeep.withValues(alpha: 0.95),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppSpacing.md),
-            side: const BorderSide(color: Colors.redAccent, width: 2),
-          ),
-          title: Row(
-            children:[
-              const Icon(Icons.warning_amber_rounded, color: Colors.redAccent, size: 28),
-              const SizedBox(width: AppSpacing.sm),
-              Expanded(
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    loc.logoutDialogTitle,
-                    style: AppTextStyles.titleLarge.copyWith(color: Colors.redAccent),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          content: Text(
-            loc.logoutDialogBody,
-            style: AppTextStyles.bodyMedium,
-          ),
-          actions:[
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
-              child: Text(loc.actionCancel, style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary)),
-            ),
-            MechaButton(
-              label: loc.actionDisconnect,
-              onTap: () {
-                Navigator.pop(dialogContext);
-                context.go('/');
-              },
-            ),
-          ],
+  Future<void> _loadSettings() async {
+    setState(() => _loading = true);
+    try {
+      await Future.wait<void>([
+        _audioService.init(),
+        _voiceService.init(),
+      ]);
+
+      final results = await Future.wait<dynamic>([
+        AppSettingsService.instance.getMasterVolume(),
+        AppSettingsService.instance.getVoiceVolume(),
+        AppSettingsService.instance.getNotificationsEnabled(),
+        AppSettingsService.instance.getShizukiVoiceEnabled(),
+        SessionStorage.getCurrentUser(),
+        _notificationService.getPermissionStatus(),
+        Permission.microphone.status,
+      ]);
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _masterVolume = results[0] as double;
+        _voiceVolume = results[1] as double;
+        _notificationsEnabled = results[2] as bool;
+        _voiceEnabled = results[3] as bool;
+        _currentUser = results[4] as AppUser?;
+        _notificationPermission = results[5] as PermissionStatus;
+        _microphonePermission = results[6] as PermissionStatus;
+        _loading = false;
+      });
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() => _loading = false);
+      _showMessage('Failed to load settings: $error');
+    }
+  }
+
+  Future<void> _toggleNotifications(bool value) async {
+    setState(() => _notificationsEnabled = value);
+    try {
+      await _notificationService.setEnabled(value);
+      final permission = await _notificationService.getPermissionStatus();
+      if (!mounted) {
+        return;
+      }
+      setState(() => _notificationPermission = permission);
+      if (value && !permission.isGranted) {
+        _showMessage(
+          'Notifications are enabled in-app, but OS permission is still blocked.',
         );
-      },
-    );
+      }
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() => _notificationsEnabled = !value);
+      _showMessage('Notification update failed: $error');
+    }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final loc = AppLocalizations.of(context)!;
-    final currentLocale = ref.watch(languageProvider);
+  Future<void> _toggleVoice(bool value) async {
+    setState(() => _voiceEnabled = value);
+    try {
+      await _voiceService.setEnabled(value);
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() => _voiceEnabled = !value);
+      _showMessage('Voice update failed: $error');
+    }
+  }
 
-    return Scaffold(
-      backgroundColor: AppColors.bgDeep,
-      appBar: MechaAppBar(title: loc.systemControl),
-      body: Stack(
-        children:[
-          const GridBackground(),
-          SingleChildScrollView(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children:[
-                // ── LANGUAGE SELECTION ─────────────────────────────────
-                _SectionLabel(loc.languageSectionLabel),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
-                  decoration: BoxDecoration(
-                    color: AppColors.bgCard,
-                    borderRadius: BorderRadius.circular(AppSpacing.md),
-                    border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children:[
-                      Text(loc.systemLanguageLabel, style: AppTextStyles.titleMedium),
-                      SegmentedButton<String>(
-                        segments: const[
-                          ButtonSegment(value: 'en', label: Text('EN')),
-                          ButtonSegment(value: 'vi', label: Text('VI')),
-                        ],
-                        selected: {currentLocale.languageCode},
-                        onSelectionChanged: (Set<String> newSelection) {
-                          ref.read(languageProvider.notifier).setLanguage(newSelection.first);
-                        },
-                        style: SegmentedButton.styleFrom(
-                          backgroundColor: AppColors.bgDeep,
-                          selectedBackgroundColor: AppColors.primary.withValues(alpha: 0.2),
-                          foregroundColor: AppColors.textPrimary,
-                          selectedForegroundColor: AppColors.primary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.lg),
+  Future<void> _logout({required bool allSessions}) async {
+    setState(() => _loggingOut = true);
+    try {
+      if (allSessions) {
+        await _authService.logoutAll();
+      } else {
+        await _authService.logout();
+      }
 
-                // ── AUDIO SYSTEMS ──────────────────────────────────────
-                _SectionLabel(loc.audioSystems),
+      if (!mounted) {
+        return;
+      }
 
-                _SliderCard(
-                  label: loc.masterVolume,
-                  value: _masterVol,
-                  onChanged: (v) {
-                    setState(() => _masterVol = v);
-                    _audioService.setMasterVolume(v);
-                  },
-                  onChangeEnd: (v) {
-                    _audioService.playBeep();
-                  },
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                _SliderCard(
-                  label: loc.effectVolume,
-                  value: _effectVol,
-                  onChanged: (v) {
-                    setState(() => _effectVol = v);
-                    _voiceService.setVolume(v);
-                  },
-                  onChangeEnd: (v) {
-                    final langCode = ref.read(languageProvider).languageCode;
-                    _voiceService.speak(loc.effectVolume, languageCode: langCode); // Or any test string
-                  },
-                ),
+      context.go('/login');
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() => _loggingOut = false);
+      _showMessage('Logout failed: $error');
+    }
+  }
 
-                const SizedBox(height: AppSpacing.lg),
+  Future<void> _refreshPermissions() async {
+    final notificationPermission =
+        await _notificationService.getPermissionStatus();
+    final microphonePermission = await Permission.microphone.status;
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _notificationPermission = notificationPermission;
+      _microphonePermission = microphonePermission;
+    });
+  }
 
-                // ── VOICE SELECTION ────────────────────────────────────
-                _SectionLabel(loc.voiceSelection),
+  void _showMessage(String message, {bool isError = true}) {
+    if (!mounted) {
+      return;
+    }
 
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.md,
-                    vertical: AppSpacing.sm,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.bgCard,
-                    borderRadius: BorderRadius.circular(AppSpacing.md),
-                    border: Border.all(
-                      color: AppColors.primary.withValues(alpha: 0.3),
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children:[
-                      Text(loc.shizukisVoice,
-                          style: AppTextStyles.titleMedium),
-                      DropdownButton<String>(
-                        value: _selectedVoice,
-                        dropdownColor: AppColors.bgCard,
-                        underline: const SizedBox(),
-                        style: AppTextStyles.bodyMedium,
-                        items:[
-                      DropdownMenuItem(value: 'Voice A', child: Text(loc.voiceOptionA)),
-                      DropdownMenuItem(value: 'Voice B', child: Text(loc.voiceOptionB)),
-                    ],
-                        onChanged: (v) =>
-                            setState(() => _selectedVoice = v ?? _selectedVoice),
-                      ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: AppSpacing.lg),
-
-                // ── SYSTEM CONTROLS ────────────────────────────────────
-                _SectionLabel(loc.systemControls),
-
-                ..._toggleDefinitions(loc).map((t) => _ToggleCard(
-                      key: ValueKey(t.id),
-                      title: t.title,
-                      subtitle: t.subtitle,
-                      icon: t.icon,
-                      value: _togglesStates[t.id] ?? false,
-                      onChanged: (v) => setState(() => _togglesStates[t.id] = v),
-                    )),
-
-                const SizedBox(height: AppSpacing.xl),
-
-                // ── SESSION WARNING ────────────────────────────────────
-                Center(
-                  child: Text(loc.sessionWarning,
-                      style: AppTextStyles.caption),
-                ),
-
-                const SizedBox(height: AppSpacing.md),
-
-                // ── EXIT TO START ──────────────────────────────────────
-                MechaButton(
-                  label: loc.exitToStart,
-                  onTap: () => _showLogoutDialog(context),
-                ),
-
-                const SizedBox(height: AppSpacing.xl),
-              ],
-            ),
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        backgroundColor: AppColors.bgCard,
+        content: Text(
+          message,
+          style: TextStyle(
+            color: isError ? Colors.redAccent : Colors.greenAccent,
           ),
-        ],
+        ),
       ),
     );
   }
 
-  List<_ToggleDef> _toggleDefinitions(AppLocalizations loc) {
-    return [
-      _ToggleDef(id: 'darkMode', title: loc.darkMode, subtitle: loc.darkModeSub, icon: Icons.dark_mode),
-      _ToggleDef(id: 'notifications', title: loc.notifications, subtitle: loc.notificationsSub, icon: Icons.notifications),
-      _ToggleDef(id: 'shizukiVoice', title: loc.shizukiVoice, subtitle: loc.shizukiVoiceSub, icon: Icons.record_voice_over),
-      _ToggleDef(id: 'hapticFeedback', title: loc.hapticFeedback, subtitle: loc.hapticSub, icon: Icons.vibration),
-      _ToggleDef(id: 'privacyShield', title: loc.privacyShield, subtitle: loc.privacySub, icon: Icons.security),
-    ];
+  String _permissionLabel(PermissionStatus status) {
+    if (status.isGranted) {
+      return 'Granted';
+    }
+    if (status.isPermanentlyDenied) {
+      return 'Blocked';
+    }
+    if (status.isDenied) {
+      return 'Denied';
+    }
+    if (status.isRestricted) {
+      return 'Restricted';
+    }
+    if (status.isLimited) {
+      return 'Limited';
+    }
+    return 'Unknown';
   }
-}
-
-class _ToggleDef {
-  const _ToggleDef({
-    required this.id,
-    required this.title,
-    required this.subtitle,
-    required this.icon,
-  });
-  final String id;
-  final String title;
-  final String subtitle;
-  final IconData icon;
-}
-
-// ── Section label ──────────────────────────────────────────────────────────────
-class _SectionLabel extends StatelessWidget {
-  const _SectionLabel(this.label);
-  final String label;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-      child: Text(label, style: AppTextStyles.sectionLabel),
+    final currentLocale = ref.watch(languageProvider);
+
+    return WorkspaceScreenShell(
+      title: 'System Settings',
+      trailing: IconButton(
+        onPressed: _loading ? null : _loadSettings,
+        icon: const Icon(Icons.refresh, color: AppColors.primary),
+      ),
+      child: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : ListView(
+              children: [
+                MechaPanel(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Language', style: AppTextStyles.titleMedium),
+                      const SizedBox(height: AppSpacing.sm),
+                      LayoutBuilder(
+                        builder: (context, constraints) {
+                          final picker = SegmentedButton<String>(
+                            segments: const [
+                              ButtonSegment(value: 'en', label: Text('EN')),
+                              ButtonSegment(value: 'vi', label: Text('VI')),
+                            ],
+                            selected: {currentLocale.languageCode},
+                            onSelectionChanged: (selection) {
+                              ref
+                                  .read(languageProvider.notifier)
+                                  .setLanguage(selection.first);
+                            },
+                            style: SegmentedButton.styleFrom(
+                              backgroundColor: AppColors.bgDeep,
+                              selectedBackgroundColor:
+                                  AppColors.primary.withValues(alpha: 0.2),
+                              foregroundColor: AppColors.textPrimary,
+                              selectedForegroundColor: AppColors.primary,
+                            ),
+                          );
+
+                          if (constraints.maxWidth < 520) {
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'System language persists across restarts.',
+                                  style: AppTextStyles.bodySmall,
+                                ),
+                                const SizedBox(height: AppSpacing.sm),
+                                picker,
+                              ],
+                            );
+                          }
+
+                          return Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  'System language persists across restarts.',
+                                  style: AppTextStyles.bodySmall,
+                                ),
+                              ),
+                              const SizedBox(width: AppSpacing.md),
+                              picker,
+                            ],
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                MechaPanel(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Audio', style: AppTextStyles.titleMedium),
+                      const SizedBox(height: AppSpacing.md),
+                      _SettingsSliderCard(
+                        label: 'Master Volume',
+                        value: _masterVolume,
+                        onChanged: (value) {
+                          setState(() => _masterVolume = value);
+                          unawaited(_audioService.setMasterVolume(value));
+                        },
+                        onChangeEnd: (_) => unawaited(_audioService.playBeep()),
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                      _SettingsSliderCard(
+                        label: 'Shizuki Voice Volume',
+                        value: _voiceVolume,
+                        onChanged: (value) {
+                          setState(() => _voiceVolume = value);
+                          unawaited(_voiceService.setVolume(value));
+                        },
+                        onChangeEnd: (_) {
+                          final languageCode =
+                              ref.read(languageProvider).languageCode;
+                          unawaited(
+                            _voiceService.speak(
+                              'Voice output ready.',
+                              languageCode: languageCode,
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                MechaPanel(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Runtime Toggles', style: AppTextStyles.titleMedium),
+                      const SizedBox(height: AppSpacing.md),
+                      _SettingsSwitchTile(
+                        title: 'Notifications',
+                        subtitle:
+                            'Controls whether reminder notifications are scheduled locally.',
+                        value: _notificationsEnabled,
+                        onChanged: (value) {
+                          unawaited(_toggleNotifications(value));
+                        },
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                      _SettingsSwitchTile(
+                        title: 'Shizuki Voice',
+                        subtitle:
+                            'Controls whether AI replies and home-screen lines are spoken aloud.',
+                        value: _voiceEnabled,
+                        onChanged: (value) {
+                          unawaited(_toggleVoice(value));
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                MechaPanel(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              'Status',
+                              style: AppTextStyles.titleMedium,
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: _refreshPermissions,
+                            child: Text(
+                              'REFRESH',
+                              style: AppTextStyles.caption.copyWith(
+                                color: AppColors.primary,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      Text(
+                        _currentUser == null
+                            ? 'No active local session loaded.'
+                            : 'Signed in as ${_currentUser!.resolvedDisplayName} (@${_currentUser!.username}).',
+                        style: AppTextStyles.bodySmall,
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                      Wrap(
+                        spacing: AppSpacing.sm,
+                        runSpacing: AppSpacing.sm,
+                        children: [
+                          _StatusPill(
+                            label:
+                                'Session ${_currentUser == null ? 'Missing' : 'Active'}',
+                          ),
+                          _StatusPill(
+                            label:
+                                'Notifications ${_permissionLabel(_notificationPermission)}',
+                          ),
+                          _StatusPill(
+                            label:
+                                'Microphone ${_permissionLabel(_microphonePermission)}',
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                MechaPanel(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Session Controls',
+                          style: AppTextStyles.titleMedium),
+                      const SizedBox(height: AppSpacing.xs),
+                      Text(
+                        'These actions revoke the current device session or every active refresh session on the backend.',
+                        style: AppTextStyles.bodySmall,
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                      ResponsiveActionGroup(
+                        children: [
+                          MechaButton(
+                            label: _loggingOut ? 'PROCESSING...' : 'LOGOUT',
+                            variant: MechaButtonVariant.outlined,
+                            onTap: _loggingOut
+                                ? null
+                                : () => _logout(allSessions: false),
+                          ),
+                          MechaButton(
+                            label: _loggingOut
+                                ? 'PROCESSING...'
+                                : 'LOGOUT ALL SESSIONS',
+                            onTap: _loggingOut
+                                ? null
+                                : () => _logout(allSessions: true),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
     );
   }
 }
 
-// ── Slider card ────────────────────────────────────────────────────────────────
-class _SliderCard extends StatelessWidget {
-  const _SliderCard({
+class _SettingsSliderCard extends StatelessWidget {
+  const _SettingsSliderCard({
     required this.label,
     required this.value,
     required this.onChanged,
@@ -306,23 +455,30 @@ class _SliderCard extends StatelessWidget {
         vertical: AppSpacing.sm,
       ),
       decoration: BoxDecoration(
-        color: AppColors.bgCard,
-        borderRadius: BorderRadius.circular(AppSpacing.md),
+        color: AppColors.bgDeep,
+        borderRadius: BorderRadius.circular(AppRadius.md),
         border: Border.all(
-          color: AppColors.primary.withValues(alpha: 0.2),
+          color: AppColors.primary.withValues(alpha: 0.18),
         ),
       ),
-      child: Row(
-        children:[
-          Text(label, style: AppTextStyles.titleMedium),
-          Expanded(
-            child: Slider(
-              value: value,
-              onChanged: onChanged,
-              onChangeEnd: onChangeEnd,
-              activeColor: AppColors.primary,
-              inactiveColor: AppColors.primary.withValues(alpha: 0.2),
-            ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(child: Text(label, style: AppTextStyles.bodyMedium)),
+              Text(
+                '${(value * 100).round()}%',
+                style: AppTextStyles.caption,
+              ),
+            ],
+          ),
+          Slider(
+            value: value,
+            onChanged: onChanged,
+            onChangeEnd: onChangeEnd,
+            activeColor: AppColors.primary,
+            inactiveColor: AppColors.primary.withValues(alpha: 0.2),
           ),
         ],
       ),
@@ -330,61 +486,75 @@ class _SliderCard extends StatelessWidget {
   }
 }
 
-// ── Toggle card ────────────────────────────────────────────────────────────────
-class _ToggleCard extends StatelessWidget {
-  const _ToggleCard({
-    super.key,
+class _SettingsSwitchTile extends StatelessWidget {
+  const _SettingsSwitchTile({
     required this.title,
     required this.subtitle,
-    required this.icon,
     required this.value,
     required this.onChanged,
   });
 
   final String title;
   final String subtitle;
-  final IconData icon;
   final bool value;
   final ValueChanged<bool> onChanged;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.md,
-        vertical: AppSpacing.sm,
-      ),
+      padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: AppColors.bgCard,
-        borderRadius: BorderRadius.circular(AppSpacing.md),
+        color: AppColors.bgDeep,
+        borderRadius: BorderRadius.circular(AppRadius.md),
         border: Border.all(
-          color: AppColors.primary.withValues(alpha: 0.2),
+          color: AppColors.primary.withValues(alpha: 0.18),
         ),
       ),
       child: Row(
-        children:[
-          Icon(icon, color: AppColors.primary, size: 20),
-          const SizedBox(width: AppSpacing.md),
+        children: [
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children:[
-                Text(title, style: AppTextStyles.titleMedium),
-                Text(subtitle, style: AppTextStyles.caption),
+              children: [
+                Text(title, style: AppTextStyles.bodyMedium),
+                const SizedBox(height: AppSpacing.xs),
+                Text(subtitle, style: AppTextStyles.bodySmall),
               ],
             ),
           ),
+          const SizedBox(width: AppSpacing.md),
           Switch(
             value: value,
             onChanged: onChanged,
-            activeThumbColor: AppColors.textPrimary,
             activeTrackColor: AppColors.primary,
-            inactiveThumbColor: AppColors.textSecondary,
-            inactiveTrackColor: AppColors.bgCard,
+            activeThumbColor: AppColors.textPrimary,
           ),
         ],
       ),
+    );
+  }
+}
+
+class _StatusPill extends StatelessWidget {
+  const _StatusPill({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.sm,
+        vertical: AppSpacing.xs,
+      ),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(AppRadius.pill),
+        border: Border.all(
+          color: AppColors.primary.withValues(alpha: 0.18),
+        ),
+      ),
+      child: Text(label, style: AppTextStyles.caption),
     );
   }
 }

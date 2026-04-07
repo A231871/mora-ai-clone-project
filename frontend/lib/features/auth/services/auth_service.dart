@@ -1,84 +1,169 @@
 import 'dart:convert';
 import 'dart:io';
-import 'package:google_sign_in/google_sign_in.dart';
+
 import 'package:flutter/services.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
+
 import '../../../core/config/google_sign_in_config.dart';
 import '../../../core/constants/api_constants.dart';
+import '../../../shared/models/workspace_models.dart';
+import '../../workspace/services/users_service.dart';
+import '../models/auth_session.dart';
 import '../models/google_sign_in_result.dart';
+import 'session_storage.dart';
+import '../../../core/services/chat_service.dart';
 
 class AuthService {
-  static const String _tokenKey = 'jwt_token';
+  AuthService({
+    http.Client? httpClient,
+    UsersService? usersService,
+  })  : _httpClient = httpClient ?? http.Client(),
+        _usersService = usersService ?? UsersService();
 
-  // Login Method
+  final http.Client _httpClient;
+  final UsersService _usersService;
+
+  GoogleSignIn _buildGoogleSignIn() {
+    return GoogleSignIn(
+      scopes: const ['email', 'profile'],
+      serverClientId: GoogleSignInConfig.serverClientIdOrNull,
+    );
+  }
+
+  Future<void> _clearGoogleSession({GoogleSignIn? googleSignIn}) async {
+    final client = googleSignIn ?? _buildGoogleSignIn();
+
+    try {
+      await client.signOut();
+    } catch (_) {
+      // Clearing the local Google cache is best-effort.
+    }
+
+    try {
+      await client.disconnect();
+    } catch (_) {
+      // Disconnect may fail when there is no active Google session.
+    }
+  }
+
   Future<Map<String, dynamic>> login(String username, String password) async {
     try {
-      final response = await http.post(
+      final response = await _httpClient.post(
         Uri.parse(ApiConstants.loginEndpoint),
-        headers: {'Content-Type': 'application/json'},
+        headers: const {'Content-Type': 'application/json'},
         body: jsonEncode({'username': username, 'password': password}),
       );
 
-      final data = jsonDecode(response.body);
-
+      final data = _decodeJsonBody(response.body);
       if (response.statusCode == 200) {
-        // Save the JWT token locally
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString(_tokenKey, data['token']);
-        return {'success': true, 'message': 'Login successful'};
-      } else {
-        return {'success': false, 'message': data['error'] ?? 'Login failed'};
-      }
-    } catch (e) {
-      return {'success': false, 'message': 'Network error: $e'};
-    }
-  }
-
-  // Register Method
-  Future<Map<String, dynamic>> register(
-      String username, String password) async {
-    try {
-      final response = await http.post(
-        Uri.parse(ApiConstants.registerEndpoint),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'username': username, 'password': password}),
-      );
-
-      final data = jsonDecode(response.body);
-
-      if (response.statusCode == 201) {
-        return {'success': true, 'message': 'Registration successful'};
-      } else {
+        await _persistSessionFromPayload(data);
         return {
-          'success': false,
-          'message': data['error'] ?? 'Registration failed'
+          'success': true,
+          'message': data['message'] ?? 'Login successful',
         };
       }
-    } catch (e) {
-      return {'success': false, 'message': 'Network error: $e'};
+
+      return {
+        'success': false,
+        'message': data['message'] ?? 'Login failed',
+      };
+    } catch (error) {
+      return {'success': false, 'message': 'Network error: $error'};
     }
   }
 
-  // Check if User is Logged In
-  Future<bool> isLoggedIn() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.containsKey(_tokenKey);
+  Future<Map<String, dynamic>> register(
+    String username,
+    String password,
+  ) async {
+    try {
+      final response = await _httpClient.post(
+        Uri.parse(ApiConstants.registerEndpoint),
+        headers: const {'Content-Type': 'application/json'},
+        body: jsonEncode({'username': username, 'password': password}),
+      );
+
+      final data = _decodeJsonBody(response.body);
+      if (response.statusCode == 201) {
+        return {
+          'success': true,
+          'message': data['message'] ?? 'Registration successful',
+        };
+      }
+
+      return {
+        'success': false,
+        'message': data['message'] ?? 'Registration failed',
+      };
+    } catch (error) {
+      return {'success': false, 'message': 'Network error: $error'};
+    }
   }
 
-  // Logout Method
+  Future<bool> isLoggedIn() {
+    return SessionStorage.isLoggedIn();
+  }
+
   Future<void> logout() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_tokenKey);
+    final session = await SessionStorage.loadSession();
+
+    try {
+      if (session != null && session.accessToken.isNotEmpty) {
+        await _httpClient.post(
+          Uri.parse('${ApiConstants.baseUrl}/auth/logout'),
+          headers: {
+            'Content-Type': 'application/json',
+            HttpHeaders.authorizationHeader: 'Bearer ${session.accessToken}',
+          },
+          body: jsonEncode({'refreshToken': session.refreshToken}),
+        );
+      }
+    } catch (_) {
+      // Local cleanup is more important than surfacing a logout transport error.
+    } finally {
+      ChatService().disconnect();
+      await _clearGoogleSession();
+      await SessionStorage.clearSession();
+    }
+  }
+
+  Future<void> logoutAll() async {
+    final session = await SessionStorage.loadSession();
+
+    try {
+      if (session != null && session.accessToken.isNotEmpty) {
+        await _httpClient.post(
+          Uri.parse('${ApiConstants.baseUrl}/auth/logout-all'),
+          headers: {
+            'Content-Type': 'application/json',
+            HttpHeaders.authorizationHeader: 'Bearer ${session.accessToken}',
+          },
+        );
+      }
+    } catch (_) {
+      // Local cleanup is more important than surfacing a logout transport error.
+    } finally {
+      ChatService().disconnect();
+      await _clearGoogleSession();
+      await SessionStorage.clearSession();
+    }
+  }
+
+  Future<AppUser?> hydrateCurrentUser() async {
+    final cachedUser = await SessionStorage.getCurrentUser();
+    try {
+      return await _usersService.getCurrentUser();
+    } catch (_) {
+      return cachedUser;
+    }
   }
 
   Future<GoogleSignInResult> signInWithGoogle() async {
     final config = GoogleSignInConfigSnapshot.current();
     try {
-      final googleSignIn = GoogleSignIn(
-        scopes: ['email', 'profile'],
-        serverClientId: GoogleSignInConfig.serverClientIdOrNull,
-      );
+      final googleSignIn = _buildGoogleSignIn();
+      await _clearGoogleSession(googleSignIn: googleSignIn);
 
       final account = await googleSignIn.signIn();
       if (account == null) {
@@ -109,27 +194,28 @@ class AuthService {
         );
       }
 
-      final response = await http.post(
+      final response = await _httpClient.post(
         Uri.parse(ApiConstants.googleAuthEndpoint),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'idToken': idToken}),
       );
 
-      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      final data = _decodeJsonBody(response.body);
 
       if (response.statusCode == 200 && data['token'] != null) {
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString(_tokenKey, data['token'] as String);
-        return const GoogleSignInResult.success(message: 'Login successful');
+        await _persistSessionFromPayload(data);
+        return GoogleSignInResult.success(
+          message: data['message']?.toString() ?? 'Login successful',
+        );
       }
 
       return GoogleSignInResult.failure(
         failure: GoogleSignInFailure(
           code: GoogleSignInFailureCode.backendRejected,
-          message: data['error']?.toString() ?? 'Google login failed',
+          message: data['message']?.toString() ?? 'Google login failed',
           diagnostics: _buildDiagnostics(
             config,
-            rawMessage: data['error']?.toString(),
+            rawMessage: data['message']?.toString(),
           ),
         ),
       );
@@ -163,6 +249,36 @@ class AuthService {
         ),
       );
     }
+  }
+
+  Future<void> _persistSessionFromPayload(Map<String, dynamic> payload) async {
+    final token = payload['token']?.toString() ?? '';
+    final refreshToken = payload['refreshToken']?.toString() ?? '';
+    if (token.isEmpty || refreshToken.isEmpty) {
+      throw const FormatException('Auth payload is missing tokens');
+    }
+
+    final session = AuthSession(
+      accessToken: token,
+      refreshToken: refreshToken,
+      user: AppUser.fromJson(payload['user']),
+    );
+    await SessionStorage.saveSession(session);
+  }
+
+  Map<String, dynamic> _decodeJsonBody(String body) {
+    if (body.isEmpty) {
+      return <String, dynamic>{};
+    }
+
+    final decoded = jsonDecode(body);
+    if (decoded is Map<String, dynamic>) {
+      return decoded;
+    }
+    if (decoded is Map) {
+      return Map<String, dynamic>.from(decoded);
+    }
+    return <String, dynamic>{'message': decoded.toString()};
   }
 
   GoogleSignInFailure _classifyPlatformFailure(
