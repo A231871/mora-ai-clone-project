@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart'; // Added for debugPrint
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:socket_io_client/socket_io_client.dart' as io; // Changed IO to io
 import '../constants/api_constants.dart';
+import '../../features/auth/services/session_storage.dart';
 
 class ChatService {
   // Singleton pattern for global access
@@ -50,8 +50,7 @@ class ChatService {
   }
 
   Future<void> _connectOnce() async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('jwt_token');
+    final token = await SessionStorage.getAccessToken();
 
     if (token == null) {
       debugPrint("[ChatService] Cannot connect: No JWT token found");

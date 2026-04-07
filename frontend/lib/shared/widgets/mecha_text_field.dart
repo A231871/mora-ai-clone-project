@@ -11,12 +11,16 @@ class MechaTextField extends StatefulWidget {
     required this.hint,
     this.isPassword = false,
     this.controller,
+    this.readOnly = false,
+    this.enabled = true,
   });
 
   final String label;
   final String hint;
   final bool isPassword;
   final TextEditingController? controller;
+  final bool readOnly;
+  final bool enabled;
 
   @override
   State<MechaTextField> createState() => _MechaTextFieldState();
@@ -34,6 +38,8 @@ class _MechaTextFieldState extends State<MechaTextField> {
         const SizedBox(height: AppSpacing.xs),
         TextFormField(
           controller: widget.controller,
+          enabled: widget.enabled,
+          readOnly: widget.readOnly,
           obscureText: widget.isPassword && _obscure,
           style: AppTextStyles.bodyMedium,
           decoration: InputDecoration(
@@ -47,7 +53,8 @@ class _MechaTextFieldState extends State<MechaTextField> {
             ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(AppSpacing.md),
-              borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+              borderSide:
+                  const BorderSide(color: AppColors.primary, width: 1.5),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(AppSpacing.md),

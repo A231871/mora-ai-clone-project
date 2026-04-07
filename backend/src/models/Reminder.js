@@ -6,6 +6,18 @@ const reminderSchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
+  projectId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Project',
+    default: null,
+    index: true
+  },
+  taskId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Task',
+    default: null,
+    index: true
+  },
   message: {
     type: String,
     required: true

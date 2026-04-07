@@ -3,12 +3,15 @@ import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 import 'package:permission_handler/permission_handler.dart';
 
+import 'app_settings_service.dart';
+
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
   factory NotificationService() => _instance;
   NotificationService._internal();
 
-  final FlutterLocalNotificationsPlugin _notificationsPlugin = FlutterLocalNotificationsPlugin();
+  final FlutterLocalNotificationsPlugin _notificationsPlugin =
+      FlutterLocalNotificationsPlugin();
 
   Future<void> init() async {
     tz.initializeTimeZones();
@@ -16,13 +19,15 @@ class NotificationService {
     const AndroidInitializationSettings initializationSettingsAndroid =
         AndroidInitializationSettings('@mipmap/ic_launcher');
 
-    const DarwinInitializationSettings initializationSettingsIOS = DarwinInitializationSettings(
+    const DarwinInitializationSettings initializationSettingsIOS =
+        DarwinInitializationSettings(
       requestAlertPermission: true,
       requestBadgePermission: true,
       requestSoundPermission: true,
     );
 
-    const InitializationSettings initializationSettings = InitializationSettings(
+    const InitializationSettings initializationSettings =
+        InitializationSettings(
       android: initializationSettingsAndroid,
       iOS: initializationSettingsIOS,
     );
@@ -36,12 +41,38 @@ class NotificationService {
   }
 
   Future<void> requestPermissions() async {
-    // Basic permissions query
     await Permission.notification.request();
-    
-    // Explicit API requests for Local Notifications payload features on 13+
-    _notificationsPlugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()?.requestNotificationsPermission();
-    _notificationsPlugin.resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>()?.requestPermissions(alert: true, badge: true, sound: true);
+
+    _notificationsPlugin
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>()
+        ?.requestNotificationsPermission();
+    _notificationsPlugin
+        .resolvePlatformSpecificImplementation<
+            IOSFlutterLocalNotificationsPlugin>()
+        ?.requestPermissions(alert: true, badge: true, sound: true);
+  }
+
+  Future<bool> isEnabled() {
+    return AppSettingsService.instance.getNotificationsEnabled();
+  }
+
+  Future<void> setEnabled(bool enabled) async {
+    await AppSettingsService.instance.setNotificationsEnabled(enabled);
+    if (enabled) {
+      await requestPermissions();
+      return;
+    }
+
+    await cancelAllNotifications();
+  }
+
+  Future<void> cancelAllNotifications() async {
+    await _notificationsPlugin.cancelAll();
+  }
+
+  Future<PermissionStatus> getPermissionStatus() {
+    return Permission.notification.status;
   }
 
   int getNotificationId(String mongoId, [int dayOffset = 0]) {
@@ -51,14 +82,22 @@ class NotificationService {
 
   int _mapDayToIso(String dayName) {
     switch (dayName.substring(0, 3).toLowerCase()) {
-      case 'mon': return DateTime.monday;
-      case 'tue': return DateTime.tuesday;
-      case 'wed': return DateTime.wednesday;
-      case 'thu': return DateTime.thursday;
-      case 'fri': return DateTime.friday;
-      case 'sat': return DateTime.saturday;
-      case 'sun': return DateTime.sunday;
-      default: return DateTime.monday;
+      case 'mon':
+        return DateTime.monday;
+      case 'tue':
+        return DateTime.tuesday;
+      case 'wed':
+        return DateTime.wednesday;
+      case 'thu':
+        return DateTime.thursday;
+      case 'fri':
+        return DateTime.friday;
+      case 'sat':
+        return DateTime.saturday;
+      case 'sun':
+        return DateTime.sunday;
+      default:
+        return DateTime.monday;
     }
   }
 
@@ -77,6 +116,10 @@ class NotificationService {
     required DateTime time,
     required List<String> daysOfWeek,
   }) async {
+    if (!await isEnabled()) {
+      return;
+    }
+
     const androidDetails = AndroidNotificationDetails(
       'mora_ai_reminders',
       'Shizuki Reminders',
@@ -90,7 +133,8 @@ class NotificationService {
       presentBadge: true,
       presentSound: true,
     );
-    const details = NotificationDetails(android: androidDetails, iOS: iosDetails);
+    const details =
+        NotificationDetails(android: androidDetails, iOS: iosDetails);
 
     if (daysOfWeek.isEmpty) {
       // One-time reminder
@@ -127,16 +171,17 @@ class NotificationService {
     }
   }
 
-  Future<void> cancelReminderNotifications(String mongoId, {List<String>? previousDaysOfWeek}) async {
+  Future<void> cancelReminderNotifications(String mongoId,
+      {List<String>? previousDaysOfWeek}) async {
     await _notificationsPlugin.cancel(id: getNotificationId(mongoId, 0));
-    
+
     if (previousDaysOfWeek != null && previousDaysOfWeek.isNotEmpty) {
       for (String day in previousDaysOfWeek) {
         int targetWeekday = _mapDayToIso(day);
-        await _notificationsPlugin.cancel(id: getNotificationId(mongoId, targetWeekday));
+        await _notificationsPlugin.cancel(
+            id: getNotificationId(mongoId, targetWeekday));
       }
     } else {
-      // Safely try cancelling all 7 possible days if unknown
       for (int i = 1; i <= 7; i++) {
         await _notificationsPlugin.cancel(id: getNotificationId(mongoId, i));
       }
